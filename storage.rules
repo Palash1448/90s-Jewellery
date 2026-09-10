@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Check if user is authenticated admin
+    function isAdmin() {
+      return request.auth != null;
+    }
+
+    // Product images: public can view/read, only admins can upload/delete
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin()
+                    && request.resource.size < 10 * 1024 * 1024 // max 10MB
+                    && request.resource.contentType.matches('image/.*');
+    }
+
+    // Store branding / settings images:
+    match /branding/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
