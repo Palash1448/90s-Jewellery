@@ -1,7 +1,23 @@
 {
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/razorpay-api/create_order.php",
+      "destination": "/api/create_order"
+    },
+    {
+      "source": "/razorpay-api/verify_payment.php",
+      "destination": "/api/verify_payment"
+    },
+    {
+      "source": "/api/create_order.php",
+      "destination": "/api/create_order"
+    },
+    {
+      "source": "/api/verify_payment.php",
+      "destination": "/api/verify_payment"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
