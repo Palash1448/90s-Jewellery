@@ -34,6 +34,7 @@ export const App: React.FC = () => {
       <Route path="/p/:slug" element={<ProductPage />} />
       <Route path="/checkout/:slug" element={<CheckoutPage />} />
       <Route path="/order-success/:orderId" element={<OrderSuccessPage />} />
+      <Route path="/order-confirmed/:orderId" element={<OrderSuccessPage />} />
       <Route path="/order-failed" element={<OrderFailedPage />} />
 
       {/* 2. Admin Authentication */}

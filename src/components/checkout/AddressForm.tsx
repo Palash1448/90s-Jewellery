@@ -44,6 +44,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ data, onChange, errors
             <input
               type="text"
               name="addressLine"
+              autoComplete="address-line1"
               placeholder="e.g. Flat 402, Royal Palms Residency"
               value={data.addressLine}
               onChange={(e) => onChange({ ...data, addressLine: e.target.value })}
@@ -65,6 +66,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ data, onChange, errors
             <input
               type="text"
               name="area"
+              autoComplete="address-line2"
               placeholder="e.g. 14th Main, Indiranagar"
               value={data.area}
               onChange={(e) => onChange({ ...data, area: e.target.value })}
@@ -105,6 +107,7 @@ export const AddressForm: React.FC<AddressFormProps> = ({ data, onChange, errors
               <input
                 type="text"
                 name="city"
+                autoComplete="address-level2"
                 placeholder="e.g. Bengaluru / Mumbai"
                 value={data.city}
                 onChange={(e) => onChange({ ...data, city: e.target.value })}
@@ -122,11 +125,12 @@ export const AddressForm: React.FC<AddressFormProps> = ({ data, onChange, errors
             </label>
             <select
               name="state"
+              autoComplete="address-level1"
               value={data.state}
               onChange={(e) => onChange({ ...data, state: e.target.value })}
               className={`w-full px-4 py-3 bg-white border ${
                 errors.state ? 'border-rose-500 ring-1 ring-rose-300' : 'border-[#D9CFBE] focus:border-[#BA9541]'
-              } rounded-xl text-base sm:text-sm text-[#1E1A17] focus:outline-none transition-all`}
+              } rounded-xl text-base sm:text-sm text-[#1E1A17] focus:outline-none transition-all cursor-pointer`}
             >
               <option value="">Select State</option>
               {INDIAN_STATES.map((st) => (
@@ -148,6 +152,8 @@ export const AddressForm: React.FC<AddressFormProps> = ({ data, onChange, errors
             <input
               type="text"
               name="pincode"
+              inputMode="numeric"
+              autoComplete="postal-code"
               maxLength={6}
               placeholder="e.g. 560038"
               value={data.pincode}

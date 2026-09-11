@@ -254,58 +254,99 @@ export const AdminDashboard: React.FC = () => {
             No orders placed yet. Products created will generate customer orders here.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAF8F5] text-[#73685C] uppercase font-bold tracking-wider border-b border-[#E8E2D8]">
-                <tr>
-                  <th className="py-3 px-4">Order #</th>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Product</th>
-                  <th className="py-3 px-4">Amount</th>
-                  <th className="py-3 px-4">Payment</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F2ECE1]">
-                {recentOrders.map((ord) => (
-                  <tr key={ord.id} className="hover:bg-[#FAF8F5] transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-[#1E1A17]">
-                      {ord.orderNumber}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-semibold text-[#1E1A17]">{ord.customerSnapshot?.name}</div>
-                      <div className="text-[11px] text-[#8C8072]">{ord.customerSnapshot?.mobile}</div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-medium text-[#1E1A17] truncate max-w-[180px]">
-                        {ord.productName}
-                      </div>
-                      <div className="text-[11px] text-[#8C8072]">Qty: {ord.quantity}</div>
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-[#1E1A17]">
-                      ₹{ord.total.toLocaleString('en-IN')}
-                    </td>
-                    <td className="py-3.5 px-4">
+          <>
+            {/* Mobile Cards View (< 768px) */}
+            <div className="md:hidden divide-y divide-[#F2ECE1]">
+              {recentOrders.map((ord) => (
+                <div key={ord.id} className="py-3.5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-[#1E1A17]">{ord.orderNumber}</span>
+                    <span className="font-bold text-xs text-[#1E1A17]">₹{ord.total.toLocaleString('en-IN')}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-[#8C8072] block text-[11px]">Customer:</span>
+                      <strong className="text-[#1E1A17]">{ord.customerSnapshot?.name}</strong>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[#8C8072] block text-[11px]">Product:</span>
+                      <span className="text-[#1E1A17] font-medium truncate max-w-[150px] inline-block">{ord.productName}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-[#F8F4EE]">
+                    <div className="flex items-center gap-1.5">
                       <Badge status={ord.paymentStatus} type="payment" />
-                    </td>
-                    <td className="py-3.5 px-4">
                       <Badge status={ord.orderStatus} type="order" />
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <Link
-                        to={`/admin/orders/${ord.id}`}
-                        className="inline-flex items-center gap-1 font-bold text-xs text-[#805E25] hover:text-[#1E1A17] bg-[#FAF3E0] hover:bg-[#F3E7C9] px-2.5 py-1 rounded-lg transition-colors"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Manage</span>
-                      </Link>
-                    </td>
+                    </div>
+
+                    <Link
+                      to={`/admin/orders/${ord.id}`}
+                      className="inline-flex items-center gap-1 font-bold text-xs text-[#805E25] bg-[#FAF3E0] px-2.5 py-1 rounded-lg"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Manage</span>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View (>= 768px) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#FAF8F5] text-[#73685C] uppercase font-bold tracking-wider border-b border-[#E8E2D8]">
+                  <tr>
+                    <th className="py-3 px-4">Order #</th>
+                    <th className="py-3 px-4">Customer</th>
+                    <th className="py-3 px-4">Product</th>
+                    <th className="py-3 px-4">Amount</th>
+                    <th className="py-3 px-4">Payment</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-[#F2ECE1]">
+                  {recentOrders.map((ord) => (
+                    <tr key={ord.id} className="hover:bg-[#FAF8F5] transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-[#1E1A17]">
+                        {ord.orderNumber}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-[#1E1A17]">{ord.customerSnapshot?.name}</div>
+                        <div className="text-[11px] text-[#8C8072]">{ord.customerSnapshot?.mobile}</div>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <div className="font-medium text-[#1E1A17] truncate max-w-[180px]">
+                          {ord.productName}
+                        </div>
+                        <div className="text-[11px] text-[#8C8072]">Qty: {ord.quantity}</div>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-[#1E1A17]">
+                        ₹{ord.total.toLocaleString('en-IN')}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <Badge status={ord.paymentStatus} type="payment" />
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <Badge status={ord.orderStatus} type="order" />
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <Link
+                          to={`/admin/orders/${ord.id}`}
+                          className="inline-flex items-center gap-1 font-bold text-xs text-[#805E25] hover:text-[#1E1A17] bg-[#FAF3E0] hover:bg-[#F3E7C9] px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Manage</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

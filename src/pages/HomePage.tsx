@@ -159,27 +159,27 @@ export const HomePage: React.FC = () => {
 
           {/* Product Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6 animate-pulse">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-[#E8E2D8] p-4 space-y-3">
+                <div key={i} className="bg-white rounded-2xl border border-[#E8E2D8] p-3 sm:p-4 space-y-3">
                   <div className="aspect-square bg-[#EAE3D5] rounded-xl"></div>
-                  <div className="h-4 bg-[#EAE3D5] rounded w-3/4"></div>
-                  <div className="h-4 bg-[#EAE3D5] rounded w-1/3"></div>
+                  <div className="h-3.5 bg-[#EAE3D5] rounded w-3/4"></div>
+                  <div className="h-3.5 bg-[#EAE3D5] rounded w-1/3"></div>
                 </div>
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl border border-[#E8E2D8] p-8">
-              <p className="text-[#73685C] text-sm">No products found in this category.</p>
+            <div className="text-center py-12 sm:py-16 bg-white rounded-2xl border border-[#E8E2D8] p-6 sm:p-8">
+              <p className="text-[#73685C] text-xs sm:text-sm">No products found in this category.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
               {filtered.map((product) => {
                 const img = product.primaryImage || product.images?.[0];
                 return (
                   <div
                     key={product.id}
-                    className="bg-white rounded-2xl border border-[#E8E2D8] overflow-hidden luxury-hover-shadow flex flex-col group"
+                    className="bg-white rounded-xl sm:rounded-2xl border border-[#E8E2D8] overflow-hidden luxury-hover-shadow flex flex-col justify-between group shadow-2xs"
                   >
                     {/* Image Area */}
                     <div className="relative aspect-square overflow-hidden bg-[#F5EFE6] block">
@@ -193,7 +193,7 @@ export const HomePage: React.FC = () => {
                       </Link>
 
                       {product.discountPercentage > 0 && (
-                        <span className="absolute top-3 left-3 bg-[#8C2D3B] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow uppercase pointer-events-none">
+                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-[#8C2D3B] text-white text-[9px] sm:text-[10px] font-bold px-1.5 sm:px-2 py-0.5 rounded shadow uppercase pointer-events-none">
                           {product.discountPercentage}% OFF
                         </span>
                       )}
@@ -205,55 +205,55 @@ export const HomePage: React.FC = () => {
                           e.stopPropagation();
                           setSharingProduct(product);
                         }}
-                        className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-[#1E1A17] shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10 cursor-pointer"
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 hover:bg-white text-[#1E1A17] shadow-md flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10 cursor-pointer"
                         title="Share Product Link"
                         aria-label="Share Product Link"
                       >
-                        <Share2 className="w-4 h-4 text-[#805E25]" />
+                        <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#805E25]" />
                       </button>
                     </div>
 
                     {/* Content */}
-                    <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between space-y-2 sm:space-y-3">
                       <div>
-                        <span className="text-[11px] font-semibold text-[#8C7F70] uppercase tracking-wider block">
+                        <span className="text-[9px] sm:text-[11px] font-semibold text-[#8C7F70] uppercase tracking-wider block truncate">
                           {product.category}
                         </span>
                         <Link to={`/p/${product.slug}`} className="hover:text-[#BA9541] transition-colors">
-                          <h3 className="font-display font-bold text-base text-[#1E1A17] line-clamp-2 mt-1">
+                          <h3 className="font-display font-bold text-xs sm:text-base text-[#1E1A17] line-clamp-2 mt-0.5 sm:mt-1 leading-snug">
                             {product.name}
                           </h3>
                         </Link>
                       </div>
 
-                      {/* Pricing */}
-                      <div className="pt-2 border-t border-[#F2ECE1] flex items-center justify-between">
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-display font-bold text-xl text-[#1E1A17]">
+                      {/* Pricing & Buy Action */}
+                      <div className="pt-2 border-t border-[#F2ECE1] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-baseline gap-1.5 sm:gap-2">
+                          <span className="font-display font-bold text-sm sm:text-xl text-[#1E1A17]">
                             ₹{product.price.toLocaleString('en-IN')}
                           </span>
                           {product.mrp > product.price && (
-                            <span className="text-xs text-[#8C8074] line-through">
+                            <span className="text-[10px] sm:text-xs text-[#8C8074] line-through">
                               ₹{product.mrp.toLocaleString('en-IN')}
                             </span>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1 sm:gap-1.5 w-full sm:w-auto">
                           <button
                             onClick={() => setSharingProduct(product)}
-                            className="p-2 rounded-lg bg-[#FAF3E0] hover:bg-[#F2E6CE] text-[#805E25] border border-[#E0D0B4] transition-colors"
+                            className="p-1.5 sm:p-2 rounded-lg bg-[#FAF3E0] hover:bg-[#F2E6CE] text-[#805E25] border border-[#E0D0B4] transition-colors shrink-0"
                             title="Share"
                           >
-                            <Share2 className="w-3.5 h-3.5" />
+                            <Share2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
 
                           <Link
                             to={`/p/${product.slug}`}
-                            className="bg-[#1E1A17] hover:bg-black text-white text-xs font-bold py-2 px-3.5 rounded-lg flex items-center gap-1 transition-all"
+                            className="flex-1 sm:flex-initial bg-[#1E1A17] hover:bg-black text-white text-[11px] sm:text-xs font-bold py-1.5 sm:py-2 px-2.5 sm:px-3.5 rounded-lg flex items-center justify-center gap-1 transition-all"
                           >
-                            <span>Buy Now</span>
-                            <ArrowRight className="w-3.5 h-3.5 text-[#D4AF37]" />
+                            <span>Buy</span>
+                            <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#D4AF37]" />
                           </Link>
                         </div>
                       </div>

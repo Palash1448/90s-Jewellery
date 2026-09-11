@@ -57,6 +57,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange, erro
             <input
               type="text"
               name="name"
+              autoComplete="name"
               placeholder="e.g. Ananya Sharma"
               value={data.name}
               onChange={(e) => onChange({ ...data, name: e.target.value })}
@@ -80,6 +81,8 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange, erro
             <input
               type="tel"
               name="mobile"
+              inputMode="numeric"
+              autoComplete="tel-national"
               maxLength={10}
               placeholder="98765 43210"
               value={data.mobile}
@@ -100,7 +103,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange, erro
               name="isWhatsAppSame"
               checked={data.isWhatsAppSame}
               onChange={handleWhatsAppSameToggle}
-              className="w-4 h-4 rounded text-[#BA9541] focus:ring-[#BA9541] border-[#C8BEAD]"
+              className="w-4 h-4 rounded text-[#BA9541] focus:ring-[#BA9541] border-[#C8BEAD] cursor-pointer"
             />
             <span className="text-xs sm:text-sm text-[#382F26] font-medium leading-snug">
               My WhatsApp number is the same as my mobile number
@@ -121,6 +124,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange, erro
               <input
                 type="tel"
                 name="whatsapp"
+                inputMode="numeric"
                 maxLength={10}
                 placeholder="WhatsApp 10 digits"
                 value={data.whatsapp}
@@ -146,6 +150,8 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange, erro
             <input
               type="email"
               name="email"
+              inputMode="email"
+              autoComplete="email"
               placeholder="ananya@example.com"
               value={data.email}
               onChange={(e) => onChange({ ...data, email: e.target.value })}
