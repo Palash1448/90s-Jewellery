@@ -82,9 +82,15 @@ export interface Order {
     email: string;
   };
   addressSnapshot: Address;
+  paymentMethod?: 'ONLINE' | 'COD' | string;
   paymentStatus: PaymentStatus;
+  paymentVerified?: boolean;
   paymentTransactionId: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   orderStatus: OrderStatus;
+  paidAt?: string | number | any;
   createdAt: string | number | any;
   updatedAt: string | number | any;
 }

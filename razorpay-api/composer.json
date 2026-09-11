@@ -1,0 +1,9 @@
+{
+  "name": "90s-jewellery/razorpay-backend",
+  "description": "Secure Razorpay API backend for 90s chya athavani Jewellery",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "razorpay/razorpay": "^2.9"
+  }
+}

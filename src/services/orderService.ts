@@ -59,8 +59,10 @@ export async function createPendingOrder(params: {
     email: string;
   };
   address: Address;
+  paymentMethod?: 'ONLINE' | 'COD' | string;
+  existingOrderId?: string;
 }): Promise<Order> {
-  const { product, quantity, customer, address } = params;
+  const { product, quantity, customer, address, paymentMethod = 'ONLINE', existingOrderId } = params;
 
   // 1. Ensure customer is recorded
   const customerRecord = await upsertCustomer(customer);
@@ -72,6 +74,58 @@ export async function createPendingOrder(params: {
   const subtotal = unitPrice * quantity;
   const shipping = subtotal >= 999 ? 0 : (product.shippingCharge || 0);
   const total = subtotal + shipping;
+
+  // If existing order ID provided, check and update it
+  if (existingOrderId) {
+    const existing = await getOrderById(existingOrderId);
+    if (existing && existing.paymentStatus !== 'paid') {
+      const updatedOrder: Order = {
+        ...existing,
+        productId: product.id,
+        productName: product.name,
+        productImage: product.primaryImage || (product.images && product.images[0]) || '',
+        quantity,
+        unitPrice,
+        mrp,
+        discount,
+        shipping,
+        subtotal,
+        total,
+        customerSnapshot: {
+          name: customer.name.trim(),
+          mobile: customer.mobile.trim(),
+          whatsapp: (customer.whatsapp || customer.mobile).trim(),
+          email: (customer.email || '').trim(),
+        },
+        addressSnapshot: { ...address },
+        paymentMethod,
+        paymentStatus: 'pending',
+        orderStatus: 'new',
+        updatedAt: new Date().toISOString(),
+      };
+
+      const list = getLocalOrders();
+      const idx = list.findIndex((o) => o.id === existingOrderId);
+      if (idx !== -1) {
+        list[idx] = updatedOrder;
+        saveLocalOrders(list);
+      }
+
+      if (!isPlaceholderConfig) {
+        try {
+          const docRef = doc(db, 'orders', existingOrderId);
+          await updateDoc(docRef, {
+            ...updatedOrder,
+            updatedAt: serverTimestamp(),
+          });
+        } catch (err) {
+          console.warn('Firestore update existing order warning:', err);
+        }
+      }
+
+      return updatedOrder;
+    }
+  }
 
   const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const orderNumber = generateOrderNumber();
@@ -97,7 +151,9 @@ export async function createPendingOrder(params: {
       email: (customer.email || '').trim(),
     },
     addressSnapshot: { ...address },
+    paymentMethod,
     paymentStatus: 'pending',
+    paymentVerified: false,
     paymentTransactionId: '',
     orderStatus: 'new',
     createdAt: new Date().toISOString(),
@@ -127,11 +183,49 @@ export async function createPendingOrder(params: {
 }
 
 /**
+ * Save Razorpay Order ID to Firebase Order
+ */
+export async function saveRazorpayOrderId(orderId: string, razorpayOrderId: string): Promise<void> {
+  const current = await getOrderById(orderId);
+  if (!current) return;
+
+  const updated: Order = {
+    ...current,
+    razorpayOrderId,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const list = getLocalOrders();
+  const idx = list.findIndex((o) => o.id === orderId);
+  if (idx !== -1) {
+    list[idx] = updated;
+    saveLocalOrders(list);
+  }
+
+  if (!isPlaceholderConfig) {
+    try {
+      const docRef = doc(db, 'orders', orderId);
+      await updateDoc(docRef, {
+        razorpayOrderId,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('Firestore saveRazorpayOrderId error:', err);
+    }
+  }
+}
+
+/**
  * Confirm order after successful server-side payment verification
  */
 export async function confirmOrderPayment(
   orderId: string,
-  transactionId: string
+  transactionId: string,
+  razorpayDetails?: {
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
+  }
 ): Promise<Order> {
   const currentOrder = await getOrderById(orderId);
   if (!currentOrder) {
@@ -141,8 +235,13 @@ export async function confirmOrderPayment(
   const updated: Order = {
     ...currentOrder,
     paymentStatus: 'paid',
+    paymentVerified: true,
     paymentTransactionId: transactionId,
+    razorpayOrderId: razorpayDetails?.razorpayOrderId || currentOrder.razorpayOrderId || '',
+    razorpayPaymentId: razorpayDetails?.razorpayPaymentId || transactionId,
+    razorpaySignature: razorpayDetails?.razorpaySignature || '',
     orderStatus: 'confirmed',
+    paidAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 
@@ -167,8 +266,13 @@ export async function confirmOrderPayment(
       const docRef = doc(db, 'orders', orderId);
       await updateDoc(docRef, {
         paymentStatus: 'paid',
+        paymentVerified: true,
         paymentTransactionId: transactionId,
+        razorpayOrderId: updated.razorpayOrderId,
+        razorpayPaymentId: updated.razorpayPaymentId,
+        razorpaySignature: updated.razorpaySignature,
         orderStatus: 'confirmed',
+        paidAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
     } catch (err) {

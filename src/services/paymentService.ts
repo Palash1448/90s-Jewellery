@@ -1,151 +1,253 @@
-import { httpsCallable } from 'firebase/functions';
-import { functions, isPlaceholderConfig } from '../firebase/config';
-import type { Order, Product, Address, PaymentInitiationResult, PaymentVerificationResult } from '../types';
-import { createPendingOrder, confirmOrderPayment, markOrderPaymentFailed } from './orderService';
+import type { Order, Product, Address, PaymentVerificationResult } from '../types';
+import { createPendingOrder, confirmOrderPayment, markOrderPaymentFailed, saveRazorpayOrderId } from './orderService';
 
-export interface PaymentGatewayOptions {
-  provider?: 'razorpay' | 'cashfree' | 'phonepe' | 'simulator';
-  method?: 'upi' | 'card' | 'netbanking' | 'cod_advance';
+// Razorpay Live Key ID (Safe on frontend)
+export const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_live_TaKGbG6vDu7a0e';
+
+// PHP Backend Base URL
+export const RAZORPAY_API_URL = (import.meta.env.VITE_RAZORPAY_API_URL || '/razorpay-api').replace(/\/+$/, '');
+
+export interface RazorpaySuccessResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+export interface RazorpayCheckoutOptions {
+  key?: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description?: string;
+  image?: string;
+  order_id: string;
+  prefill?: {
+    name?: string;
+    email?: string;
+    contact?: string;
+  };
+  notes?: Record<string, string>;
+  theme?: {
+    color?: string;
+    backdrop_color?: string;
+  };
+  modal?: {
+    confirm_close?: boolean;
+    ondismiss?: () => void;
+    animation?: boolean;
+  };
+  handler?: (response: RazorpaySuccessResponse) => void;
 }
 
 /**
- * 1. Initialize Payment
- * Prepares the order and payment transaction payload
+ * 1. Dynamically Load Razorpay Checkout.js Script
  */
-export async function createPayment(params: {
-  product: Product;
-  quantity: number;
-  customer: {
-    name: string;
-    mobile: string;
-    whatsapp: string;
-    email: string;
-  };
-  address: Address;
-  options?: PaymentGatewayOptions;
-}): Promise<PaymentInitiationResult> {
-  const { product, quantity, customer, address } = params;
-
-  // Step A: In production Firebase mode with Cloud Functions enabled:
-  if (!isPlaceholderConfig) {
-    try {
-      const createPaymentIntentFn = httpsCallable<any, PaymentInitiationResult>(functions, 'createPaymentIntent');
-      const res = await createPaymentIntentFn({
-        productId: product.id,
-        quantity,
-        customerInfo: customer,
-        addressInfo: address,
-      });
-      if (res.data && res.data.success) {
-        return res.data;
-      }
-    } catch (err) {
-      console.warn('Cloud Functions payment creation skipped/fallback to direct service:', err);
+export function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && (window as any).Razorpay) {
+      resolve(true);
+      return;
     }
-  }
 
-  // Step B: Create pending order in database
-  const order = await createPendingOrder({
-    product,
-    quantity,
-    customer,
-    address,
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => {
+      console.error('Failed to load Razorpay SDK checkout.js script.');
+      resolve(false);
+    };
+    document.body.appendChild(script);
   });
-
-  return {
-    success: true,
-    orderId: order.id,
-    orderNumber: order.orderNumber,
-    amount: order.total,
-    currency: 'INR',
-    gatewayOrderId: `PAY_GW_${order.id}_${Date.now()}`,
-  };
 }
 
 /**
- * 2. Server-side / Cloud Function Payment Verification
+ * 2. Create Razorpay Order via PHP Backend (/create_order.php)
  */
-export async function verifyPayment(params: {
-  orderId: string;
-  paymentTransactionId: string;
-  signature?: string;
-  simulatedSuccess?: boolean;
-}): Promise<PaymentVerificationResult> {
-  const { orderId, paymentTransactionId, simulatedSuccess = true } = params;
+export async function createRazorpayOrderViaPHP(params: {
+  firebaseOrderId: string;
+  amount: number;
+  currency?: string;
+  notes?: Record<string, any>;
+}): Promise<{
+  success: boolean;
+  razorpayOrderId?: string;
+  amount?: number;
+  currency?: string;
+  keyId?: string;
+  error?: string;
+}> {
+  const { firebaseOrderId, amount, currency = 'INR', notes = {} } = params;
 
-  if (!orderId) {
+  try {
+    const response = await fetch(`${RAZORPAY_API_URL}/create_order.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        firebaseOrderId,
+        amount,
+        currency,
+        notes,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `PHP order creation failed with status ${response.status}`);
+    }
+
+    // Save Razorpay order ID to Firebase for tracking
+    if (data.razorpayOrderId) {
+      await saveRazorpayOrderId(firebaseOrderId, data.razorpayOrderId);
+    }
+
+    return {
+      success: true,
+      razorpayOrderId: data.razorpayOrderId,
+      amount: data.amount,
+      currency: data.currency || currency,
+      keyId: data.keyId || RAZORPAY_KEY_ID,
+    };
+  } catch (error: any) {
+    console.error('createRazorpayOrderViaPHP error:', error);
     return {
       success: false,
-      orderId: '',
-      orderNumber: '',
-      transactionId: '',
-      status: 'failed',
-      message: 'Invalid order reference.',
+      error: error.message || 'Failed to create Razorpay order on server.',
     };
   }
+}
 
-  // If live Cloud Function exists, invoke it
-  if (!isPlaceholderConfig) {
-    try {
-      const verifyPaymentFn = httpsCallable<any, any>(functions, 'verifyPayment');
-      const response = await verifyPaymentFn({
-        orderId,
-        paymentTransactionId,
-        paymentStatus: simulatedSuccess ? 'paid' : 'failed',
-      });
-      if (response.data && response.data.success) {
-        return {
-          success: true,
-          orderId,
-          orderNumber: response.data.data.orderNumber,
-          transactionId: paymentTransactionId,
-          status: 'paid',
-        };
-      }
-    } catch (err) {
-      console.warn('Cloud function verification fallback to client verified transaction:', err);
+/**
+ * 3. Verify Payment Signature via PHP Backend (/verify_payment.php)
+ */
+export async function verifyRazorpayPaymentViaPHP(params: {
+  firebaseOrderId: string;
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}): Promise<PaymentVerificationResult> {
+  const { firebaseOrderId, razorpay_payment_id, razorpay_order_id, razorpay_signature } = params;
+
+  try {
+    const response = await fetch(`${RAZORPAY_API_URL}/verify_payment.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        firebaseOrderId,
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success || !data.verified) {
+      throw new Error(data.error || 'Payment signature verification failed.');
     }
-  }
 
-  // Local verification handler
-  if (simulatedSuccess) {
-    const updatedOrder = await confirmOrderPayment(orderId, paymentTransactionId);
+    // Update Firebase Order to PAID & CONFIRMED
+    const updatedOrder = await confirmOrderPayment(firebaseOrderId, razorpay_payment_id, {
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+    });
+
     return {
       success: true,
       orderId: updatedOrder.id,
       orderNumber: updatedOrder.orderNumber,
-      transactionId: paymentTransactionId,
+      transactionId: razorpay_payment_id,
       status: 'paid',
+      message: 'Payment verified and order confirmed successfully.',
     };
-  } else {
-    await markOrderPaymentFailed(orderId, 'User cancelled or gateway timeout');
+  } catch (error: any) {
+    console.error('verifyRazorpayPaymentViaPHP error:', error);
+    await markOrderPaymentFailed(firebaseOrderId, error.message || 'Verification failure');
+
     return {
       success: false,
-      orderId,
+      orderId: firebaseOrderId,
       orderNumber: '',
-      transactionId: paymentTransactionId,
+      transactionId: razorpay_payment_id,
       status: 'failed',
-      message: 'Payment verification failed or was cancelled.',
+      message: error.message || 'Payment signature verification failed.',
     };
   }
 }
 
 /**
- * 3. Handle Payment Success
+ * 4. Open Razorpay Checkout Window
  */
-export async function handlePaymentSuccess(
-  orderId: string,
-  transactionId: string
-): Promise<Order> {
-  return await confirmOrderPayment(orderId, transactionId);
+export async function openRazorpayCheckoutModal(options: {
+  razorpayOrderId: string;
+  amount: number;
+  currency?: string;
+  order: Order;
+  brandName?: string;
+  onSuccess: (response: RazorpaySuccessResponse) => void;
+  onDismiss: () => void;
+  onFailure: (errorReason: string) => void;
+}): Promise<void> {
+  const { razorpayOrderId, amount, currency = 'INR', order, brandName, onSuccess, onDismiss, onFailure } = options;
+
+  const scriptLoaded = await loadRazorpayScript();
+  if (!scriptLoaded || !(window as any).Razorpay) {
+    throw new Error('Razorpay SDK could not be loaded. Please check your internet connection.');
+  }
+
+  const cleanMobile = order.customerSnapshot.mobile.replace(/[^0-9]/g, '');
+
+  const checkoutConfig: RazorpayCheckoutOptions = {
+    key: RAZORPAY_KEY_ID,
+    amount: Math.round(amount * 100), // amount in paise
+    currency: currency,
+    name: brandName || '90s chya athavani Jewellery',
+    description: `Order #${order.orderNumber} - ${order.productName}`,
+    image: order.productImage || 'https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?auto=format&fit=crop&w=300&q=80',
+    order_id: razorpayOrderId,
+    prefill: {
+      name: order.customerSnapshot.name,
+      email: order.customerSnapshot.email || '',
+      contact: cleanMobile.length === 10 ? `+91${cleanMobile}` : cleanMobile,
+    },
+    notes: {
+      firebaseOrderId: order.id,
+      orderNumber: order.orderNumber,
+      productId: order.productId,
+      quantity: String(order.quantity),
+    },
+    theme: {
+      color: '#BA9541',
+      backdrop_color: 'rgba(0, 0, 0, 0.75)',
+    },
+    modal: {
+      confirm_close: true,
+      ondismiss: () => {
+        onDismiss();
+      },
+      animation: true,
+    },
+    handler: (response: RazorpaySuccessResponse) => {
+      onSuccess(response);
+    },
+  };
+
+  const razorpayInstance = new (window as any).Razorpay(checkoutConfig);
+
+  razorpayInstance.on('payment.failed', (response: any) => {
+    console.warn('Razorpay payment.failed event:', response);
+    const reason = response?.error?.description || response?.error?.reason || 'Payment was declined by bank or user cancelled.';
+    onFailure(reason);
+  });
+
+  razorpayInstance.open();
 }
 
-/**
- * 4. Handle Payment Failure
- */
-export async function handlePaymentFailure(
-  orderId: string,
-  reason?: string
-): Promise<Order> {
-  return await markOrderPaymentFailed(orderId, reason);
-}

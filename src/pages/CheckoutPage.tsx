@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeft, Lock, ShoppingBag, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Lock, ShoppingBag, ChevronDown, AlertCircle } from 'lucide-react';
 import { useProduct } from '../hooks/useProduct';
 import { Footer } from '../components/common/Footer';
 import { CustomerForm, type CustomerFormData } from '../components/checkout/CustomerForm';
 import { AddressForm } from '../components/checkout/AddressForm';
+import { PaymentMethodSelector, type PaymentMethod } from '../components/checkout/PaymentMethodSelector';
 import { OrderSummary } from '../components/checkout/OrderSummary';
-import { PaymentModal } from '../components/checkout/PaymentModal';
 import { SeoMeta } from '../components/common/SeoMeta';
-import { createPayment, verifyPayment } from '../services/paymentService';
+import { createPendingOrder } from '../services/orderService';
+import {
+  createRazorpayOrderViaPHP,
+  openRazorpayCheckoutModal,
+  verifyRazorpayPaymentViaPHP,
+} from '../services/paymentService';
 import type { Address, Order } from '../types';
 
 export const CheckoutPage: React.FC = () => {
@@ -38,10 +43,12 @@ export const CheckoutPage: React.FC = () => {
     country: 'India',
   });
 
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('ONLINE');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingText, setSubmittingText] = useState<string>('');
   const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
 
   // Validation
@@ -96,7 +103,13 @@ export const CheckoutPage: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
+  /**
+   * Main Checkout Trigger Handler: "PROCEED TO PAYMENT" / "PLACE ORDER (COD)"
+   */
   const handleProceedToPayment = async () => {
+    setGeneralError(null);
+
+    // 1. Validate Form
     if (!validate()) {
       window.scrollTo({ top: 150, behavior: 'smooth' });
       return;
@@ -107,8 +120,9 @@ export const CheckoutPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Initialize Order in pending state
-      const res = await createPayment({
+      // 2. Create or Update Pending Order in Firebase (re-using existing pendingOrder.id if retried)
+      setSubmittingText('Securing your order...');
+      const order = await createPendingOrder({
         product,
         quantity,
         customer: {
@@ -118,89 +132,94 @@ export const CheckoutPage: React.FC = () => {
           email: customerData.email,
         },
         address: addressData,
+        paymentMethod,
+        existingOrderId: pendingOrder?.id,
       });
 
-      if (res && res.success) {
-        // Construct pending order snapshot for payment modal
-        const unitPrice = product.price;
-        const mrp = product.mrp || product.price;
-        const discount = Math.max(0, mrp - unitPrice) * quantity;
-        const subtotal = unitPrice * quantity;
-        const shipping = subtotal >= 999 ? 0 : (product.shippingCharge || 50);
-        const total = subtotal + shipping;
+      setPendingOrder(order);
 
-        const orderObj: Order = {
-          id: res.orderId,
-          orderNumber: res.orderNumber,
-          customerId: `cust_${customerData.mobile}`,
-          productId: product.id,
-          productName: product.name,
-          productImage: product.primaryImage || (product.images && product.images[0]) || '',
-          quantity,
-          unitPrice,
-          mrp,
-          discount,
-          shipping,
-          subtotal,
-          total,
-          customerSnapshot: {
-            name: customerData.name,
-            mobile: customerData.mobile,
-            whatsapp: customerData.isWhatsAppSame ? customerData.mobile : customerData.whatsapp,
-            email: customerData.email,
-          },
-          addressSnapshot: addressData,
-          paymentStatus: 'pending',
-          paymentTransactionId: '',
-          orderStatus: 'new',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        setPendingOrder(orderObj);
-        setIsPaymentModalOpen(true);
+      // --- FLOW A: CASH ON DELIVERY (COD) ---
+      if (paymentMethod === 'COD') {
+        setSubmittingText('Confirming COD Order...');
+        navigate(`/order-success/${order.id}`);
+        return;
       }
+
+      // --- FLOW B: ONLINE PAYMENT (RAZORPAY) ---
+      setSubmittingText('Connecting to Razorpay...');
+
+      // 3. Request Razorpay Order ID from secure PHP backend (/create_order.php)
+      const phpOrderRes = await createRazorpayOrderViaPHP({
+        firebaseOrderId: order.id,
+        amount: order.total,
+        notes: {
+          orderNumber: order.orderNumber,
+          customerPhone: customerData.mobile,
+        },
+      });
+
+      if (!phpOrderRes.success || !phpOrderRes.razorpayOrderId) {
+        throw new Error(phpOrderRes.error || 'Unable to initialize Razorpay payment. Please try again.');
+      }
+
+      setSubmittingText('Opening Razorpay Checkout...');
+
+      // 4. Trigger Native Razorpay Checkout Modal
+      await openRazorpayCheckoutModal({
+        razorpayOrderId: phpOrderRes.razorpayOrderId,
+        amount: order.total,
+        order,
+        brandName: import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery',
+        onSuccess: async (response) => {
+          setIsSubmitting(true);
+          setSubmittingText('Verifying payment security...');
+
+          try {
+            // 5. Verify cryptographic signature via PHP backend (/verify_payment.php)
+            const verifyRes = await verifyRazorpayPaymentViaPHP({
+              firebaseOrderId: order.id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            if (verifyRes.success) {
+              navigate(`/order-success/${order.id}`);
+            } else {
+              navigate(
+                `/order-failed?orderId=${order.id}&reason=${encodeURIComponent(
+                  verifyRes.message || 'Signature verification failed'
+                )}`
+              );
+            }
+          } catch (verificationError: any) {
+            console.error('Payment verification failed:', verificationError);
+            navigate(
+              `/order-failed?orderId=${order.id}&reason=${encodeURIComponent(
+                verificationError.message || 'Payment Verification Error'
+              )}`
+            );
+          } finally {
+            setIsSubmitting(false);
+            setSubmittingText('');
+          }
+        },
+        onDismiss: () => {
+          setIsSubmitting(false);
+          setSubmittingText('');
+        },
+        onFailure: (reason: string) => {
+          setIsSubmitting(false);
+          setSubmittingText('');
+          setGeneralError(`Payment was not completed: ${reason}. You can retry anytime below.`);
+        },
+      });
     } catch (err: any) {
-      alert(`Error initializing order: ${err.message || 'Please try again.'}`);
-    } finally {
+      console.error('Checkout processing error:', err);
+      setGeneralError(err.message || 'An error occurred while preparing checkout. Please try again.');
       setIsSubmitting(false);
+      setSubmittingText('');
     }
-  };
-
-  const handlePaymentSuccess = async (transactionId: string) => {
-    if (!pendingOrder) return;
-
-    try {
-      const verification = await verifyPayment({
-        orderId: pendingOrder.id,
-        paymentTransactionId: transactionId,
-        simulatedSuccess: true,
-      });
-
-      if (verification.success) {
-        setIsPaymentModalOpen(false);
-        navigate(`/order-success/${pendingOrder.id}`);
-      } else {
-        setIsPaymentModalOpen(false);
-        navigate(`/order-failed?orderId=${pendingOrder.id}&reason=${encodeURIComponent(verification.message || 'Payment Verification Failed')}`);
-      }
-    } catch (err: any) {
-      console.error('Payment confirmation error:', err);
-      navigate(`/order-failed?orderId=${pendingOrder.id}&reason=PaymentProcessingError`);
-    }
-  };
-
-  const handlePaymentFailure = async (reason: string) => {
-    if (!pendingOrder) return;
-
-    await verifyPayment({
-      orderId: pendingOrder.id,
-      paymentTransactionId: `FAIL_${Date.now()}`,
-      simulatedSuccess: false,
-    });
-
-    setIsPaymentModalOpen(false);
-    navigate(`/order-failed?orderId=${pendingOrder.id}&reason=${encodeURIComponent(reason)}`);
   };
 
   if (loading) {
@@ -296,8 +315,18 @@ export const CheckoutPage: React.FC = () => {
       </div>
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 lg:px-8 py-5 sm:py-8 lg:py-10">
+        {generalError && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs sm:text-sm flex items-start gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-bold block mb-0.5">Notice</span>
+              <span>{generalError}</span>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          {/* Left Columns: Forms */}
+          {/* Left Columns: Step 1 (Customer), Step 2 (Address), Step 3 (Payment Method) */}
           <div className="lg:col-span-7 space-y-6">
             <CustomerForm
               data={customerData}
@@ -310,30 +339,27 @@ export const CheckoutPage: React.FC = () => {
               onChange={setAddressData}
               errors={errors}
             />
+
+            <PaymentMethodSelector
+              selectedMethod={paymentMethod}
+              onChange={setPaymentMethod}
+              totalAmount={totalAmount}
+            />
           </div>
 
-          {/* Right Columns: Summary */}
+          {/* Right Columns: Summary with "PROCEED TO PAYMENT" Button */}
           <div className="lg:col-span-5">
             <OrderSummary
               product={product}
               quantity={quantity}
+              paymentMethod={paymentMethod}
               isSubmitting={isSubmitting}
+              submittingText={submittingText}
               onProceedToPayment={handleProceedToPayment}
             />
           </div>
         </div>
       </main>
-
-      {/* Payment Gateway Modal Simulator */}
-      {pendingOrder && (
-        <PaymentModal
-          order={pendingOrder}
-          isOpen={isPaymentModalOpen}
-          onClose={() => setIsPaymentModalOpen(false)}
-          onPaymentSuccess={handlePaymentSuccess}
-          onPaymentFailure={handlePaymentFailure}
-        />
-      )}
 
       <Footer />
     </div>

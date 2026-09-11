@@ -244,11 +244,11 @@ export const AdminOrderDetails: React.FC = () => {
             </div>
 
             {/* Payment Transaction Details */}
-            <div className="pt-3 border-t border-[#EFE9DF] space-y-1.5">
+            <div className="pt-3 border-t border-[#EFE9DF] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-bold text-[#8C8072]">Transaction ID:</span>
-                <span className="font-mono text-xs font-semibold text-[#1E1A17] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E8E2D8]">
-                  {order.paymentTransactionId || 'OFFLINE / PENDING'}
+                <span className="text-[10px] uppercase font-bold text-[#8C8072]">Payment Mode:</span>
+                <span className="text-xs font-bold text-[#1E1A17] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E8E2D8]">
+                  {order.paymentMethod === 'COD' ? '💵 Cash on Delivery (COD)' : '⚡ Online (Razorpay)'}
                 </span>
               </div>
 
@@ -256,6 +256,28 @@ export const AdminOrderDetails: React.FC = () => {
                 <span className="text-[10px] uppercase font-bold text-[#8C8072]">Payment Status:</span>
                 <Badge status={order.paymentStatus} type="payment" />
               </div>
+
+              {order.razorpayOrderId && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-[#8C8072]">Razorpay Order ID:</span>
+                  <span className="font-mono text-xs font-semibold text-[#1E1A17] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E8E2D8]">
+                    {order.razorpayOrderId}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold text-[#8C8072]">Payment ID / TXN:</span>
+                <span className="font-mono text-xs font-semibold text-[#1E1A17] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E8E2D8]">
+                  {order.razorpayPaymentId || order.paymentTransactionId || 'PENDING'}
+                </span>
+              </div>
+
+              {order.paymentVerified && (
+                <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1 pt-1">
+                  <span>✓ Cryptographically verified with Razorpay HMAC-SHA256 signature</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

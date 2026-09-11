@@ -5,14 +5,18 @@ import type { Product } from '../../types';
 interface OrderSummaryProps {
   product: Product;
   quantity: number;
+  paymentMethod?: 'ONLINE' | 'COD';
   isSubmitting?: boolean;
+  submittingText?: string;
   onProceedToPayment: () => void;
 }
 
 export const OrderSummary: React.FC<OrderSummaryProps> = ({
   product,
   quantity,
+  paymentMethod = 'ONLINE',
   isSubmitting = false,
+  submittingText,
   onProceedToPayment,
 }) => {
   const unitPrice = product.price;
@@ -24,6 +28,8 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   const finalTotal = subtotal + shippingFee;
 
   const productImage = product.primaryImage || (product.images && product.images[0]) || '';
+
+  const buttonLabel = paymentMethod === 'ONLINE' ? 'PROCEED TO PAYMENT' : 'PLACE ORDER (COD)';
 
   return (
     <div className="bg-[#FAF8F5] border border-[#E8E2D8] rounded-2xl p-5 sm:p-6 shadow-md space-y-5 sticky top-24">
@@ -109,12 +115,12 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         {isSubmitting ? (
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <span>Securing Order...</span>
+            <span>{submittingText || 'Processing...'}</span>
           </div>
         ) : (
           <>
             <Lock className="w-4 h-4 text-[#D4AF37]" />
-            <span>PROCEED TO PAYMENT</span>
+            <span>{buttonLabel}</span>
             <ArrowRight className="w-4 h-4" />
           </>
         )}
