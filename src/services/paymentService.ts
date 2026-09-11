@@ -94,10 +94,21 @@ export async function createRazorpayOrderViaPHP(params: {
       }),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      if (response.status === 405) {
+        throw new Error(
+          'API Endpoint returned 405 (Method Not Allowed). If running locally, please restart `npm run dev` to enable the Razorpay dev server middleware.'
+        );
+      }
+      throw new Error(`Server returned unexpected response (status ${response.status}): ${responseText.substring(0, 120) || 'Empty body'}`);
+    }
 
     if (!response.ok || !data.success) {
-      throw new Error(data.error || `PHP order creation failed with status ${response.status}`);
+      throw new Error(data.error || `Order creation failed with status ${response.status}`);
     }
 
     // Save Razorpay order ID to Firebase for tracking
@@ -147,7 +158,13 @@ export async function verifyRazorpayPaymentViaPHP(params: {
       }),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error(`Server returned non-JSON response (status ${response.status}): ${responseText.substring(0, 120) || 'Empty body'}`);
+    }
 
     if (!response.ok || !data.success || !data.verified) {
       throw new Error(data.error || 'Payment signature verification failed.');
