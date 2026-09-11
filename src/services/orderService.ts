@@ -234,19 +234,20 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
   return list.find((o) => o.id === orderId) || null;
 }
 
-/**
- * Fetch all orders for admin dashboard
- */
 export async function getAllOrders(): Promise<Order[]> {
   let list: Order[] = [];
 
   if (!isPlaceholderConfig) {
     try {
       const colRef = collection(db, 'orders');
-      const q = query(colRef, orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
+      const snap = await getDocs(colRef);
       list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
       if (list.length > 0) {
+        list.sort((a, b) => {
+          const timeA = new Date(a.createdAt || 0).getTime();
+          const timeB = new Date(b.createdAt || 0).getTime();
+          return timeB - timeA;
+        });
         saveLocalOrders(list);
         return list;
       }

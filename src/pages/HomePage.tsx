@@ -23,13 +23,46 @@ export const HomePage: React.FC = () => {
     });
   }, []);
 
-  const categories = ['All', 'Mangalsutra', 'Necklace Sets', 'Earrings', 'Bracelets & Kadas', 'Bridal Jewellery'];
+  const defaultCategories = [
+    'All',
+    'Hair Accessories',
+    'Mangalsutra',
+    'Necklace Sets',
+    'Earrings',
+    'Bracelets & Kadas',
+    'Bridal Jewellery',
+  ];
+
+  // Dynamically include any new categories added via Admin/Firestore
+  const categories = [
+    'All',
+    ...Array.from(
+      new Set([
+        ...defaultCategories.slice(1),
+        ...products.map((p) => p.category).filter(Boolean),
+      ])
+    ),
+  ];
 
   const filtered = products.filter((p) => {
-    const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
+    let matchesCategory = false;
+    if (selectedCategory === 'All') {
+      matchesCategory = true;
+    } else if (selectedCategory === 'Hair Accessories') {
+      matchesCategory =
+        p.category === 'Hair Accessories' ||
+        p.category.toLowerCase().includes('hair') ||
+        p.category.toLowerCase().includes('mathapatti') ||
+        p.category.toLowerCase().includes('sheeshpatti') ||
+        p.category.toLowerCase().includes('juda');
+    } else {
+      matchesCategory = p.category === selectedCategory;
+    }
+
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.sku?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -37,8 +70,8 @@ export const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex flex-col">
       <SeoMeta
-        title="90s chya athavani Jewellery | Luxury Imitation & Festive Jewellery"
-        description="Shop 24K gold plated mangalsutras, royal kundan choker sets, temple jhumkas, and designer jewellery with direct WhatsApp ordering."
+        title="90s chya athavani Jewellery | Luxury Imitation, Bridal & Hair Accessories"
+        description="Shop 24K gold plated mangalsutras, royal kundan choker sets, bridal sheeshpatti, hair accessories, and designer jewellery with direct WhatsApp ordering."
       />
       <Header />
 
@@ -90,16 +123,16 @@ export const HomePage: React.FC = () => {
                 Exclusive Collection
               </span>
               <h2 className="font-display font-bold text-2xl sm:text-3xl text-[#1E1A17]">
-                Featured Jewellery
+                Featured Jewellery & Hair Accessories
               </h2>
             </div>
 
             {/* Search Bar */}
-            <div className="relative w-full md:w-72">
+            <div className="relative w-full md:w-80">
               <Search className="w-4 h-4 text-[#8A7D6E] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search mangalsutra, choker..."
+                placeholder="Search mangalsutra, hair accessory, choker..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#D9CFBE] focus:border-[#BA9541] rounded-xl text-xs text-[#1E1A17] focus:outline-none shadow-xs"

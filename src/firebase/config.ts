@@ -4,20 +4,21 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
 
-// Firebase configuration from environment variables
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDemoPlaceholderKeyForLocalTesting',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'athavani-jewels-demo.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'athavani-jewels-demo',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'athavani-jewels-demo.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '102938475610',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:102938475610:web:abcdef1234567890'
+// Firebase configuration for fir-jewl
+export const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCeNf4EwkkUqZEZXCUBsjo4lV1z8ABypfU',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'fir-jewl.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'fir-jewl',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'fir-jewl.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '730072904679',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:730072904679:web:b951396523022462a34342'
 };
 
 // Check if using placeholder demo credentials
-export const isPlaceholderConfig = !import.meta.env.VITE_FIREBASE_API_KEY || 
-  import.meta.env.VITE_FIREBASE_API_KEY.includes('Placeholder') || 
-  import.meta.env.VITE_FIREBASE_API_KEY === 'YOUR_API_KEY';
+export const isPlaceholderConfig = !firebaseConfig.apiKey || 
+  firebaseConfig.apiKey.includes('Placeholder') || 
+  firebaseConfig.apiKey === 'YOUR_API_KEY' ||
+  firebaseConfig.apiKey.includes('DemoPlaceholder');
 
 // Initialize Firebase App
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();

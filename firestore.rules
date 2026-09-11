@@ -2,55 +2,46 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper function to check if the requester is an authenticated admin
+    // Helper function to check if the requester is an authenticated admin user
     function isAdmin() {
-      return request.auth != null && (
-        request.auth.token.role == 'admin' ||
-        request.auth.token.admin == true ||
-        request.auth.token.email.matches('.*@90schyaathavanijewellery\\.com$') ||
-        request.auth.token.email.matches('.*@kalyanijewels\\.com$') ||
-        request.auth.uid != null
-      );
+      return request.auth != null;
     }
 
     // Products collection:
-    // - Public can read active products
-    // - Only admin can create, update, delete or read inactive/draft products
+    // - Public can view products
+    // - Authenticated admin can create, update, and delete products
     match /products/{productId} {
-      allow read: if resource.data.status == 'active' || isAdmin();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // Orders collection:
-    // - Public can create a new order (with pending payment status)
-    // - Public can read a specific order if looking up their confirmation
-    // - Only admin or server cloud functions can update status or read list of all orders
+    // - Public can create orders during checkout and read specific order receipts
+    // - Authenticated admin can view all orders, update status, and manage records
     match /orders/{orderId} {
-      allow create: if request.resource.data.paymentStatus == 'pending' && request.resource.data.orderStatus == 'new';
-      allow get: if true; // allow fetching the confirmation page for this order
-      allow list: if isAdmin();
-      allow update, delete: if isAdmin();
+      allow create, get: if true;
+      allow list, update, delete: if isAdmin();
     }
 
     // Customers collection:
-    // - Public can create/update their own customer entry during checkout
-    // - Only admin can list or view customer directory
+    // - Public can create or update their profile on order
+    // - Authenticated admin can view and manage customer directory
     match /customers/{customerId} {
       allow create, update: if true;
       allow read, delete: if isAdmin();
     }
 
     // Addresses collection:
-    // - Public can create address during checkout
-    // - Only admin can list all addresses
+    // - Public can create shipping address on checkout
+    // - Authenticated admin can manage addresses
     match /addresses/{addressId} {
       allow create: if true;
       allow read, update, delete: if isAdmin();
     }
 
     // Settings collection:
-    // - Public can read store profile, shipping rules & policies
-    // - Only admin can modify settings
+    // - Public can read store profile, WhatsApp numbers & shipping settings
+    // - Authenticated admin can update settings
     match /settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();

@@ -17,14 +17,19 @@ import { DEMO_PRODUCTS } from './seedService';
 
 const LOCAL_PRODUCTS_KEY = 'kj_local_products';
 
-/**
- * Helper to get local demo / cache products
- */
 function getLocalProducts(): Product[] {
   const local = localStorage.getItem(LOCAL_PRODUCTS_KEY);
   if (local) {
     try {
-      return JSON.parse(local);
+      const parsed: Product[] = JSON.parse(local);
+      const existingIds = new Set(parsed.map((p) => p.id));
+      const missing = DEMO_PRODUCTS.filter((p) => !existingIds.has(p.id));
+      if (missing.length > 0) {
+        const merged = [...parsed, ...missing];
+        localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(merged));
+        return merged;
+      }
+      return parsed;
     } catch {
       // ignore
     }
@@ -76,24 +81,27 @@ export function calculateDiscount(mrp: number, price: number): number {
   return Math.round(((mrp - price) / mrp) * 100);
 }
 
-/**
- * Fetch all products
- */
 export async function getAllProducts(onlyActive = false): Promise<Product[]> {
   let list: Product[] = [];
 
   if (!isPlaceholderConfig) {
     try {
       const colRef = collection(db, 'products');
-      const q = onlyActive
-        ? query(colRef, where('status', '==', 'active'))
-        : query(colRef, orderBy('createdAt', 'desc'));
-
-      const snap = await getDocs(q);
+      const snap = await getDocs(colRef);
       list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
       
-      // If Firestore is empty, we fall back to local seed products
       if (list.length > 0) {
+        // Sort newest first
+        list.sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+
+        if (onlyActive) {
+          list = list.filter((p) => p.status === 'active');
+        }
+
         saveLocalProducts(list);
         return list;
       }
@@ -305,14 +313,25 @@ export async function updateProductStock(id: string, quantityToDeduct: number): 
  * Seed initial products if catalog is empty
  */
 export async function seedInitialProducts(): Promise<void> {
+  try {
+    if (!isPlaceholderConfig) {
+      const colRef = collection(db, 'products');
+      const snap = await getDocs(colRef);
+      if (snap.empty) {
+        for (const p of DEMO_PRODUCTS) {
+          const docRef = doc(db, 'products', p.id);
+          await setDoc(docRef, p);
+        }
+        saveLocalProducts(DEMO_PRODUCTS);
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Seed initial products warning:', err);
+  }
+
   const existing = await getAllProducts();
   if (existing.length === 0) {
     saveLocalProducts(DEMO_PRODUCTS);
-    if (!isPlaceholderConfig) {
-      for (const p of DEMO_PRODUCTS) {
-        const docRef = doc(db, 'products', p.id);
-        await setDoc(docRef, p);
-      }
-    }
   }
 }

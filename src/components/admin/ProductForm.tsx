@@ -289,22 +289,46 @@ export const ProductForm: React.FC<ProductFormProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-[#3B3229] uppercase tracking-wider mb-1.5">
-              Category
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-[#3B3229] uppercase tracking-wider">
+                Product Category
+              </label>
+              <span className="text-[11px] text-[#BA9541] font-semibold">Includes Hair & Jewellery</span>
+            </div>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-4 py-3 bg-[#FAF8F5] border border-[#D9CFBE] focus:border-[#BA9541] rounded-xl text-sm text-[#1E1A17] focus:outline-none"
             >
-              <option value="Mangalsutra">Mangalsutra</option>
-              <option value="Necklace Sets">Necklace Sets / Chokers</option>
-              <option value="Earrings">Earrings / Jhumkas</option>
-              <option value="Bracelets & Kadas">Bracelets & Kadas</option>
-              <option value="Bridal Jewellery">Bridal Jewellery</option>
-              <option value="Rings">Finger Rings</option>
-              <option value="Anklets">Payal / Anklets</option>
+              <optgroup label="✨ Hair Products & Accessories">
+                <option value="Hair Accessories">Hair Accessories (General)</option>
+                <option value="Hair Jewellery & Judapin">Hair Jewellery & Juda Pins</option>
+                <option value="Mathapatti & Sheeshpatti">Mathapatti & Sheeshpatti</option>
+                <option value="Maang Tikka & Hair Chains">Maang Tikka & Hair Chains</option>
+                <option value="Hair Extensions & Care">Hair Extensions & Care</option>
+              </optgroup>
+              <optgroup label="💎 Traditional & Luxury Jewellery">
+                <option value="Mangalsutra">Mangalsutra</option>
+                <option value="Necklace Sets">Necklace Sets / Chokers</option>
+                <option value="Earrings">Earrings / Jhumkas</option>
+                <option value="Bracelets & Kadas">Bracelets & Kadas</option>
+                <option value="Bridal Jewellery">Bridal Jewellery</option>
+                <option value="Rings">Finger Rings</option>
+                <option value="Anklets">Payal / Anklets</option>
+              </optgroup>
+              <optgroup label="⚙️ Custom">
+                <option value="Other / Custom">Other / Custom Category...</option>
+              </optgroup>
             </select>
+
+            {category === 'Other / Custom' && (
+              <input
+                type="text"
+                placeholder="Type your custom category name..."
+                onChange={(e) => setCategory(e.target.value || 'Other / Custom')}
+                className="mt-2 w-full px-4 py-2.5 bg-[#FAF8F5] border border-[#BA9541] rounded-xl text-xs text-[#1E1A17] focus:outline-none"
+              />
+            )}
           </div>
 
           <div className="sm:col-span-2">

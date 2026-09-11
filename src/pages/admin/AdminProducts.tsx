@@ -88,16 +88,48 @@ export const AdminProducts: React.FC = () => {
     }
   };
 
+  const defaultCategories = [
+    'All',
+    'Hair Accessories',
+    'Mangalsutra',
+    'Necklace Sets',
+    'Earrings',
+    'Bracelets & Kadas',
+    'Bridal Jewellery',
+  ];
+
+  const categories = [
+    'All',
+    ...Array.from(
+      new Set([
+        ...defaultCategories.slice(1),
+        ...products.map((p) => p.category).filter(Boolean),
+      ])
+    ),
+  ];
+
   const filtered = products.filter((p) => {
-    const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
+    let matchesCategory = false;
+    if (categoryFilter === 'All') {
+      matchesCategory = true;
+    } else if (categoryFilter === 'Hair Accessories') {
+      matchesCategory =
+        p.category === 'Hair Accessories' ||
+        p.category.toLowerCase().includes('hair') ||
+        p.category.toLowerCase().includes('sheeshpatti') ||
+        p.category.toLowerCase().includes('mathapatti') ||
+        p.category.toLowerCase().includes('juda');
+    } else {
+      matchesCategory = p.category === categoryFilter;
+    }
+
     const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.slug.toLowerCase().includes(search.toLowerCase()) ||
+      p.category?.toLowerCase().includes(search.toLowerCase()) ||
       p.sku?.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
-  const categories = ['All', 'Mangalsutra', 'Necklace Sets', 'Earrings', 'Bracelets & Kadas', 'Bridal Jewellery'];
 
   return (
     <div className="space-y-6">
