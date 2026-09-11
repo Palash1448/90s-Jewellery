@@ -103,7 +103,7 @@ export const ProductHero: React.FC<ProductHeroProps> = ({ product }) => {
         <p className="text-[11px] text-[#6E6458] mt-1.5 flex flex-wrap items-center gap-1">
           <span>Inclusive of all taxes.</span>
           <span className="font-semibold text-emerald-700">
-            {product.price >= 999 ? '✓ Free Express Delivery' : '+ ₹50 Standard Shipping'}
+            ✓ Free Shipping on All Orders
           </span>
         </p>
       </div>

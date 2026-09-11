@@ -4,6 +4,7 @@ import { Search, Eye, MessageCircle } from 'lucide-react';
 import { Badge } from '../../components/common/Badge';
 import { getAllOrders } from '../../services/orderService';
 import { getAdminToCustomerWhatsAppLink } from '../../services/whatsappService';
+import { formatOrderDate } from '../../utils/dateUtils';
 import type { Order } from '../../types';
 
 export const AdminOrders: React.FC = () => {
@@ -118,12 +119,10 @@ export const AdminOrders: React.FC = () => {
             {/* Mobile Cards View (< 768px) */}
             <div className="md:hidden divide-y divide-[#F2ECE1]">
               {filtered.map((order) => {
-                const dateStr = order.createdAt
-                  ? new Date(order.createdAt).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                    })
-                  : '—';
+                const dateStr = formatOrderDate(order.createdAt, {
+                  day: 'numeric',
+                  month: 'short',
+                });
 
                 const customerPhone = order.customerSnapshot?.whatsapp || order.customerSnapshot?.mobile;
                 const customerName = order.customerSnapshot?.name || 'Customer';
@@ -202,13 +201,7 @@ export const AdminOrders: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-[#F2ECE1]">
                   {filtered.map((order) => {
-                    const dateStr = order.createdAt
-                      ? new Date(order.createdAt).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : '—';
+                    const dateStr = formatOrderDate(order.createdAt);
 
                     const customerPhone = order.customerSnapshot?.whatsapp || order.customerSnapshot?.mobile;
                     const customerName = order.customerSnapshot?.name || 'Customer';

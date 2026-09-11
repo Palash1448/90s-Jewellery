@@ -5,7 +5,6 @@ import type { Product } from '../../types';
 interface OrderSummaryProps {
   product: Product;
   quantity: number;
-  paymentMethod?: 'ONLINE' | 'COD';
   isSubmitting?: boolean;
   submittingText?: string;
   onProceedToPayment: () => void;
@@ -14,7 +13,6 @@ interface OrderSummaryProps {
 export const OrderSummary: React.FC<OrderSummaryProps> = ({
   product,
   quantity,
-  paymentMethod = 'ONLINE',
   isSubmitting = false,
   submittingText,
   onProceedToPayment,
@@ -24,12 +22,12 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   const subtotal = unitPrice * quantity;
   const totalMrp = mrp * quantity;
   const discountSavings = Math.max(0, totalMrp - subtotal);
-  const shippingFee = subtotal >= 999 ? 0 : (product.shippingCharge || 50);
-  const finalTotal = subtotal + shippingFee;
+  const shippingFee = 0;
+  const finalTotal = subtotal;
 
   const productImage = product.primaryImage || (product.images && product.images[0]) || '';
 
-  const buttonLabel = paymentMethod === 'ONLINE' ? 'PROCEED TO PAYMENT' : 'PLACE ORDER (COD)';
+  const buttonLabel = 'PROCEED TO PAYMENT';
 
   return (
     <div className="bg-[#FAF8F5] border border-[#E8E2D8] rounded-2xl p-5 sm:p-6 shadow-md space-y-5 sticky top-24">
@@ -73,26 +71,16 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         </div>
 
         <div className="flex justify-between items-center text-[#5C5042]">
-          <span className="flex items-center gap-1">
-            <span>Express Shipping</span>
-            {shippingFee === 0 && (
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                FREE
-              </span>
-            )}
+          <span className="flex items-center gap-1.5">
+            <span>Shipping</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
+              FREE
+            </span>
           </span>
-          <span className={shippingFee === 0 ? 'text-emerald-700 font-bold' : 'font-semibold text-[#1E1A17]'}>
-            {shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}
+          <span className="text-emerald-700 font-bold">
+            FREE (₹0)
           </span>
         </div>
-
-        {/* Free Shipping Progress helper if under ₹999 */}
-        {subtotal < 999 && (
-          <div className="p-2.5 rounded-lg bg-[#FAF2DC] border border-[#EADBBD] text-[11px] text-[#785E25] flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-[#BA9541] shrink-0" />
-            <span>Add ₹{(999 - subtotal).toLocaleString('en-IN')} more to unlock FREE Express Shipping!</span>
-          </div>
-        )}
 
         {/* Total calculation */}
         <div className="pt-3 border-t-2 border-[#1E1A17] flex justify-between items-baseline">

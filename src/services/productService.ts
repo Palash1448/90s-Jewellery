@@ -14,6 +14,7 @@ import {
 import { db, isPlaceholderConfig } from '../firebase/config';
 import type { Product, ProductStatus } from '../types';
 import { DEMO_PRODUCTS } from './seedService';
+import { parseFirebaseDate } from '../utils/dateUtils';
 
 const LOCAL_PRODUCTS_KEY = 'kj_local_products';
 
@@ -81,6 +82,18 @@ export function calculateDiscount(mrp: number, price: number): number {
   return Math.round(((mrp - price) / mrp) * 100);
 }
 
+
+function normalizeProductDates(data: any, id: string): Product {
+  const createdAt = parseFirebaseDate(data.createdAt).toISOString();
+  const updatedAt = parseFirebaseDate(data.updatedAt).toISOString();
+  return {
+    ...data,
+    id,
+    createdAt,
+    updatedAt,
+  } as Product;
+}
+
 export async function getAllProducts(onlyActive = false): Promise<Product[]> {
   let list: Product[] = [];
 
@@ -88,7 +101,7 @@ export async function getAllProducts(onlyActive = false): Promise<Product[]> {
     try {
       const colRef = collection(db, 'products');
       const snap = await getDocs(colRef);
-      list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Product));
+      list = snap.docs.map((d) => normalizeProductDates(d.data(), d.id));
       
       if (list.length > 0) {
         // Sort newest first
@@ -130,7 +143,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       const snap = await getDocs(q);
       if (!snap.empty) {
         const docSnap = snap.docs[0];
-        return { id: docSnap.id, ...docSnap.data() } as Product;
+        return normalizeProductDates(docSnap.data(), docSnap.id);
       }
     } catch (err) {
       console.warn('Firestore getProductBySlug warning:', err);
@@ -151,7 +164,7 @@ export async function getProductById(id: string): Promise<Product | null> {
       const docRef = doc(db, 'products', id);
       const snap = await getDoc(docRef);
       if (snap.exists()) {
-        return { id: snap.id, ...snap.data() } as Product;
+        return normalizeProductDates(snap.data(), snap.id);
       }
     } catch (err) {
       console.warn('Firestore getProductById warning:', err);

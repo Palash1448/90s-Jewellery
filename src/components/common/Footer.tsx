@@ -30,7 +30,7 @@ export const Footer: React.FC = () => {
             <div className="w-12 h-12 rounded-full bg-[#27211C] flex items-center justify-center text-[#D4AF37] mb-3">
               <Truck className="w-6 h-6" />
             </div>
-            <h4 className="font-semibold text-sm text-[#FAF8F5]">Express Delivery</h4>
+            <h4 className="font-semibold text-sm text-[#FAF8F5]">Free Shipping</h4>
             <p className="text-xs text-[#A89F95] mt-1">Insured 3-5 days delivery across India</p>
           </div>
 

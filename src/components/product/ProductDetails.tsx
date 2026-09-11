@@ -175,7 +175,7 @@ export const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
             <div className="flex items-start gap-2.5">
               <Truck className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
               <div>
-                <strong className="block text-[#1E1A17]">Express Nationwide Shipping</strong>
+                <strong className="block text-[#1E1A17]">Free Nationwide Shipping</strong>
                 <span>Dispatched within 24 hours. Transit takes 3-5 business days across all Indian pincodes via BlueDart, Delhivery & XpressBees.</span>
               </div>
             </div>

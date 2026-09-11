@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db, isPlaceholderConfig } from '../firebase/config';
 import type { Customer, Order } from '../types';
+import { parseFirebaseDate, formatOrderDate } from '../utils/dateUtils';
 
 const LOCAL_CUSTOMERS_KEY = 'kj_local_customers';
 
@@ -113,14 +114,14 @@ export async function getAllCustomers(ordersList?: Order[]): Promise<Customer[]>
       const paidOrders = customerOrders.filter((o) => o.paymentStatus === 'paid');
       const totalSpent = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
       const lastOrder = customerOrders.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) => parseFirebaseDate(b.createdAt).getTime() - parseFirebaseDate(a.createdAt).getTime()
       )[0];
 
       return {
         ...customer,
         totalOrders: customerOrders.length,
         totalSpent,
-        lastOrderDate: lastOrder ? new Date(lastOrder.createdAt).toLocaleDateString('en-IN') : undefined,
+        lastOrderDate: lastOrder ? formatOrderDate(lastOrder.createdAt) : undefined,
       };
     });
   }

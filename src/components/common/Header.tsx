@@ -22,7 +22,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-3 truncate">
             <span className="flex items-center gap-1 text-[#D4AF37] truncate">
               <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">Free Express Delivery on Orders &gt; ₹999</span>
+              <span className="truncate">Free Shipping on All Orders</span>
             </span>
             <span className="hidden md:inline text-white/40">|</span>
             <span className="hidden md:flex items-center gap-1 text-white/80 shrink-0">

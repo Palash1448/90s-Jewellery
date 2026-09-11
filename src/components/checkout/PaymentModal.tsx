@@ -10,7 +10,7 @@ interface PaymentModalProps {
   onPaymentFailure: (reason: string) => void;
 }
 
-type PaymentTab = 'upi' | 'card' | 'netbanking' | 'cod';
+type PaymentTab = 'upi' | 'card' | 'netbanking';
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   order,

@@ -95,10 +95,8 @@ export const OrderSuccessPage: React.FC = () => {
           </div>
 
           <div>
-            <span className={`text-xs font-bold tracking-widest uppercase block mb-1 ${
-              order.paymentMethod === 'COD' ? 'text-amber-700' : 'text-emerald-700'
-            }`}>
-              {order.paymentMethod === 'COD' ? 'Cash on Delivery • Order Confirmed' : 'Payment Verified & Confirmed'}
+            <span className="text-xs font-bold text-emerald-700 tracking-widest uppercase block mb-1">
+              Payment Verified & Confirmed
             </span>
             <h1 className="font-display font-bold text-3xl sm:text-4xl text-[#1E1A17]">
               🎉 Order Confirmed!
@@ -160,19 +158,13 @@ export const OrderSuccessPage: React.FC = () => {
                 <strong className="text-[#1E1A17]">{order.addressSnapshot?.city}, {order.addressSnapshot?.pincode}</strong>
               </div>
               <div>
-                <span className="text-[#8C8072] block">
-                  {order.paymentMethod === 'COD' ? 'Payable on Delivery:' : 'Total Paid:'}
-                </span>
+                <span className="text-[#8C8072] block">Total Paid:</span>
                 <strong className="text-[#1E1A17] font-bold text-emerald-800">₹{order.total.toLocaleString('en-IN')}</strong>
               </div>
               <div>
-                <span className="text-[#8C8072] block">
-                  {order.paymentMethod === 'COD' ? 'Payment Mode:' : 'Transaction ID:'}
-                </span>
+                <span className="text-[#8C8072] block">Payment ID:</span>
                 <span className="font-mono text-[10px] text-[#73685C] truncate block">
-                  {order.paymentMethod === 'COD'
-                    ? 'Cash on Delivery'
-                    : (order.razorpayPaymentId || order.paymentTransactionId || 'VERIFIED')}
+                  {order.razorpayPaymentId || order.paymentTransactionId || 'VERIFIED'}
                 </span>
               </div>
             </div>

@@ -18,6 +18,7 @@ import { Badge } from '../../components/common/Badge';
 import { OrderTimeline } from '../../components/admin/OrderTimeline';
 import { getOrderById, updateOrderStatus } from '../../services/orderService';
 import { getAdminToCustomerWhatsAppLink } from '../../services/whatsappService';
+import { formatOrderDateTime } from '../../utils/dateUtils';
 import type { Order, OrderStatus } from '../../types';
 
 export const AdminOrderDetails: React.FC = () => {
@@ -92,7 +93,7 @@ export const AdminOrderDetails: React.FC = () => {
               <Badge status={order.paymentStatus} type="payment" />
             </div>
             <p className="text-xs text-[#73685C] mt-0.5">
-              Placed on {new Date(order.createdAt).toLocaleString('en-IN')}
+              Placed on {formatOrderDateTime(order.createdAt)}
             </p>
           </div>
         </div>

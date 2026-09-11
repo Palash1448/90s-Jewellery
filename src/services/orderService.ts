@@ -15,6 +15,7 @@ import { db, isPlaceholderConfig } from '../firebase/config';
 import type { Order, OrderStatus, PaymentStatus, Address, Product } from '../types';
 import { updateProductStock, getProductById } from './productService';
 import { upsertCustomer } from './customerService';
+import { parseFirebaseDate } from '../utils/dateUtils';
 
 const LOCAL_ORDERS_KEY = 'kj_local_orders';
 
@@ -72,8 +73,8 @@ export async function createPendingOrder(params: {
   const mrp = product.mrp || product.price;
   const discount = Math.max(0, mrp - unitPrice) * quantity;
   const subtotal = unitPrice * quantity;
-  const shipping = subtotal >= 999 ? 0 : (product.shippingCharge || 0);
-  const total = subtotal + shipping;
+  const shipping = 0; // Free shipping on all orders
+  const total = subtotal;
 
   // If existing order ID provided, check and update it
   if (existingOrderId) {
@@ -318,6 +319,21 @@ export async function markOrderPaymentFailed(orderId: string, errorReason?: stri
   return updated;
 }
 
+
+function normalizeOrderDates(data: any, id: string): Order {
+  const createdAtDate = parseFirebaseDate(data.createdAt);
+  const updatedAtDate = parseFirebaseDate(data.updatedAt);
+  const paidAtDate = data.paidAt ? parseFirebaseDate(data.paidAt).toISOString() : undefined;
+
+  return {
+    ...data,
+    id,
+    createdAt: createdAtDate.toISOString(),
+    updatedAt: updatedAtDate.toISOString(),
+    paidAt: paidAtDate,
+  } as Order;
+}
+
 /**
  * Fetch a single order by ID
  */
@@ -327,7 +343,7 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
       const docRef = doc(db, 'orders', orderId);
       const snap = await getDoc(docRef);
       if (snap.exists()) {
-        return { id: snap.id, ...snap.data() } as Order;
+        return normalizeOrderDates(snap.data(), snap.id);
       }
     } catch (err) {
       console.warn('Firestore getOrderById warning:', err);
@@ -345,7 +361,7 @@ export async function getAllOrders(): Promise<Order[]> {
     try {
       const colRef = collection(db, 'orders');
       const snap = await getDocs(colRef);
-      list = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Order));
+      list = snap.docs.map((d) => normalizeOrderDates(d.data(), d.id));
       if (list.length > 0) {
         list.sort((a, b) => {
           const timeA = new Date(a.createdAt || 0).getTime();

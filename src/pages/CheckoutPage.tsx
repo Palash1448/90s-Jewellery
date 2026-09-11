@@ -5,7 +5,7 @@ import { useProduct } from '../hooks/useProduct';
 import { Footer } from '../components/common/Footer';
 import { CustomerForm, type CustomerFormData } from '../components/checkout/CustomerForm';
 import { AddressForm } from '../components/checkout/AddressForm';
-import { PaymentMethodSelector, type PaymentMethod } from '../components/checkout/PaymentMethodSelector';
+import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
 import { OrderSummary } from '../components/checkout/OrderSummary';
 import { SeoMeta } from '../components/common/SeoMeta';
 import { createPendingOrder } from '../services/orderService';
@@ -43,7 +43,6 @@ export const CheckoutPage: React.FC = () => {
     country: 'India',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('ONLINE');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,7 +103,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   /**
-   * Main Checkout Trigger Handler: "PROCEED TO PAYMENT" / "PLACE ORDER (COD)"
+   * Main Checkout Trigger Handler: "PROCEED TO PAYMENT" (Prepaid Razorpay)
    */
   const handleProceedToPayment = async () => {
     setGeneralError(null);
@@ -132,23 +131,16 @@ export const CheckoutPage: React.FC = () => {
           email: customerData.email,
         },
         address: addressData,
-        paymentMethod,
+        paymentMethod: 'ONLINE',
         existingOrderId: pendingOrder?.id,
       });
 
       setPendingOrder(order);
 
-      // --- FLOW A: CASH ON DELIVERY (COD) ---
-      if (paymentMethod === 'COD') {
-        setSubmittingText('Confirming COD Order...');
-        navigate(`/order-success/${order.id}`);
-        return;
-      }
-
-      // --- FLOW B: ONLINE PAYMENT (RAZORPAY) ---
+      // --- ONLINE PAYMENT (RAZORPAY) ---
       setSubmittingText('Connecting to Razorpay...');
 
-      // 3. Request Razorpay Order ID from secure PHP backend (/create_order.php)
+      // 3. Request Razorpay Order ID from secure backend (/create_order.php)
       const phpOrderRes = await createRazorpayOrderViaPHP({
         firebaseOrderId: order.id,
         amount: order.total,
@@ -175,7 +167,7 @@ export const CheckoutPage: React.FC = () => {
           setSubmittingText('Verifying payment security...');
 
           try {
-            // 5. Verify cryptographic signature via PHP backend (/verify_payment.php)
+            // 5. Verify cryptographic signature via secure backend (/verify_payment.php)
             const verifyRes = await verifyRazorpayPaymentViaPHP({
               firebaseOrderId: order.id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -244,8 +236,8 @@ export const CheckoutPage: React.FC = () => {
 
   const unitPrice = product.price;
   const subtotal = unitPrice * quantity;
-  const shippingFee = subtotal >= 999 ? 0 : (product.shippingCharge || 50);
-  const totalAmount = subtotal + shippingFee;
+  const shippingFee = 0;
+  const totalAmount = subtotal;
 
   const brandName = import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery';
 
@@ -341,8 +333,6 @@ export const CheckoutPage: React.FC = () => {
             />
 
             <PaymentMethodSelector
-              selectedMethod={paymentMethod}
-              onChange={setPaymentMethod}
               totalAmount={totalAmount}
             />
           </div>
@@ -352,7 +342,6 @@ export const CheckoutPage: React.FC = () => {
             <OrderSummary
               product={product}
               quantity={quantity}
-              paymentMethod={paymentMethod}
               isSubmitting={isSubmitting}
               submittingText={submittingText}
               onProceedToPayment={handleProceedToPayment}

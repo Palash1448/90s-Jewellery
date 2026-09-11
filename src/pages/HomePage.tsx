@@ -83,7 +83,7 @@ export const HomePage: React.FC = () => {
           <div className="max-w-6xl mx-auto px-4 relative z-10 text-center space-y-4 sm:space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FAF3E0]/10 border border-[#D4AF37]/40 text-xs font-semibold text-[#D4AF37]">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Authentic Indian Heritage Jewellery • WhatsApp Express Commerce</span>
+              <span>Authentic Indian Heritage Jewellery • Free Shipping Across India</span>
             </div>
 
             <h1 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl text-[#FAF8F5] tracking-tight max-w-3xl mx-auto leading-tight">

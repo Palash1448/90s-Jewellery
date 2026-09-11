@@ -623,7 +623,7 @@ export const ProductForm: React.FC<ProductFormProps> = ({
                 type="text"
                 value={seoDescription}
                 onChange={(e) => setSeoDescription(e.target.value)}
-                placeholder="Buy handcrafted jewellery at best price with express delivery..."
+                placeholder="Buy handcrafted jewellery at best price with free shipping..."
                 className="w-full px-4 py-2.5 bg-[#FAF8F5] border border-[#D9CFBE] rounded-xl text-xs text-[#1E1A17]"
               />
             </div>
