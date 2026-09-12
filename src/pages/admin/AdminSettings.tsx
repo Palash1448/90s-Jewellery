@@ -133,7 +133,9 @@ export const AdminSettings: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div>
-            <label className="block font-bold text-[#3B3229] uppercase mb-1">Default Shipping Fee (₹)</label>
+            <label className="block font-bold text-[#3B3229] uppercase mb-1">
+              Out of Maharashtra Shipping Fee (₹)
+            </label>
             <input
               type="number"
               min="0"
@@ -141,6 +143,7 @@ export const AdminSettings: React.FC = () => {
               onChange={(e) => setSettings({ ...settings, defaultShippingCharge: Number(e.target.value) })}
               className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#D9CFBE] focus:border-[#BA9541] rounded-xl text-[#1E1A17] font-bold"
             />
+            <p className="text-[10px] text-[#7A6F62] mt-1">Maharashtra deliveries are FREE by default.</p>
           </div>
 
           <div>
@@ -152,6 +155,7 @@ export const AdminSettings: React.FC = () => {
               onChange={(e) => setSettings({ ...settings, freeShippingThreshold: Number(e.target.value) })}
               className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#D9CFBE] focus:border-[#BA9541] rounded-xl text-[#1E1A17] font-bold"
             />
+            <p className="text-[10px] text-[#7A6F62] mt-1">Order value above which all shipping becomes free (0 to disable).</p>
           </div>
 
           <div className="sm:col-span-2">

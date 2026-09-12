@@ -7,7 +7,7 @@ import { AddressForm } from '../components/checkout/AddressForm';
 import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
 import { OrderSummary } from '../components/checkout/OrderSummary';
 import { SeoMeta } from '../components/common/SeoMeta';
-import { createPendingOrder } from '../services/orderService';
+import { createPendingOrder, calculateShippingCharge } from '../services/orderService';
 import {
   createRazorpayOrderViaPHP,
   openRazorpayCheckoutModal,
@@ -235,8 +235,8 @@ export const CheckoutPage: React.FC = () => {
 
   const unitPrice = product.price;
   const subtotal = unitPrice * quantity;
-  const shippingFee = 0;
-  const totalAmount = subtotal;
+  const shippingFee = calculateShippingCharge(addressData);
+  const totalAmount = subtotal + shippingFee;
 
   const brandName = import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery';
 
@@ -301,6 +301,10 @@ export const CheckoutPage: React.FC = () => {
               <span>Shipping:</span>
               <span className="font-semibold text-emerald-700">{shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}</span>
             </div>
+            <div className="flex justify-between pt-1 border-t border-[#E8DCBE] font-bold text-[#1E1A17]">
+              <span>Total:</span>
+              <span>₹{totalAmount.toLocaleString('en-IN')}</span>
+            </div>
           </div>
         )}
       </div>
@@ -341,6 +345,8 @@ export const CheckoutPage: React.FC = () => {
             <OrderSummary
               product={product}
               quantity={quantity}
+              shippingFee={shippingFee}
+              state={addressData.state}
               isSubmitting={isSubmitting}
               submittingText={submittingText}
               onProceedToPayment={handleProceedToPayment}

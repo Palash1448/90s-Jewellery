@@ -57,7 +57,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
         <div className="pt-2.5 border-t border-[#E8DCC0] grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#7A673F]">
           <div className="flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-[#BA9541] shrink-0" />
-            <span>Free shipping & complimentary packaging</span>
+            <span>Insured delivery & keepsake packaging</span>
           </div>
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />

@@ -152,18 +152,20 @@ export const OrderSuccessPage: React.FC = () => {
                 <strong className="text-[#1E1A17]">{order.customerSnapshot?.name}</strong>
               </div>
               <div>
-                <span className="text-[#8C8072] block">Delivery City:</span>
-                <strong className="text-[#1E1A17]">{order.addressSnapshot?.city}, {order.addressSnapshot?.pincode}</strong>
+                <span className="text-[#8C8072] block">Delivery Location:</span>
+                <strong className="text-[#1E1A17]">
+                  {order.addressSnapshot?.city}, {order.addressSnapshot?.state || ''} ({order.addressSnapshot?.pincode})
+                </strong>
               </div>
               <div>
-                <span className="text-[#8C8072] block">Total Paid:</span>
-                <strong className="text-[#1E1A17] font-bold text-emerald-800">₹{order.total.toLocaleString('en-IN')}</strong>
+                <span className="text-[#8C8072] block">Shipping Charge:</span>
+                <strong className="text-[#1E1A17]">
+                  {order.shipping === 0 ? 'FREE (₹0)' : `₹${order.shipping}`}
+                </strong>
               </div>
               <div>
-                <span className="text-[#8C8072] block">Payment ID:</span>
-                <span className="font-mono text-[10px] text-[#73685C] truncate block">
-                  {order.razorpayPaymentId || order.paymentTransactionId || 'VERIFIED'}
-                </span>
+                <span className="text-[#8C8072] block">Total Amount Paid:</span>
+                <strong className="text-[#1E1A17] font-bold text-emerald-800 text-sm">₹{order.total.toLocaleString('en-IN')}</strong>
               </div>
             </div>
           </div>

@@ -48,6 +48,33 @@ export function generateOrderNumber(): string {
 }
 
 /**
+ * Calculate shipping charge based on address:
+ * - Free (₹0) for Maharashtra state / districts
+ * - Default ₹50 for outside Maharashtra / other states / unselected
+ */
+export function calculateShippingCharge(address?: Partial<Address> | null): number {
+  if (!address) return 50;
+
+  const state = (address.state || '').trim().toLowerCase();
+
+  // If state is explicitly Maharashtra
+  if (state === 'maharashtra') {
+    return 0;
+  }
+
+  // If state is not selected yet, check if pincode is within Maharashtra (PIN prefix 40-44)
+  if (!state && address.pincode && address.pincode.length >= 2) {
+    const prefix = parseInt(address.pincode.substring(0, 2), 10);
+    if (!isNaN(prefix) && prefix >= 40 && prefix <= 44) {
+      return 0;
+    }
+  }
+
+  // Out of Maharashtra default
+  return 50;
+}
+
+/**
  * Create a new pending order before payment
  */
 export async function createPendingOrder(params: {
@@ -73,8 +100,8 @@ export async function createPendingOrder(params: {
   const mrp = product.mrp || product.price;
   const discount = Math.max(0, mrp - unitPrice) * quantity;
   const subtotal = unitPrice * quantity;
-  const shipping = 0; // Free shipping on all orders
-  const total = subtotal;
+  const shipping = calculateShippingCharge(address);
+  const total = subtotal + shipping;
 
   // If existing order ID provided, check and update it
   if (existingOrderId) {

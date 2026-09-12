@@ -5,6 +5,8 @@ import type { Product } from '../../types';
 interface OrderSummaryProps {
   product: Product;
   quantity: number;
+  shippingFee?: number;
+  state?: string;
   isSubmitting?: boolean;
   submittingText?: string;
   onProceedToPayment: () => void;
@@ -13,6 +15,8 @@ interface OrderSummaryProps {
 export const OrderSummary: React.FC<OrderSummaryProps> = ({
   product,
   quantity,
+  shippingFee = 50,
+  state,
   isSubmitting = false,
   submittingText,
   onProceedToPayment,
@@ -22,8 +26,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   const subtotal = unitPrice * quantity;
   const totalMrp = mrp * quantity;
   const discountSavings = Math.max(0, totalMrp - subtotal);
-  const shippingFee = 0;
-  const finalTotal = subtotal;
+  const finalTotal = subtotal + shippingFee;
 
   const productImage = product.primaryImage || (product.images && product.images[0]) || '';
 
@@ -73,19 +76,31 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         <div className="flex justify-between items-center text-[#5C5042]">
           <span className="flex items-center gap-1.5">
             <span>Shipping</span>
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
-              FREE
+            {shippingFee === 0 ? (
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
+                MAHARASHTRA FREE
+              </span>
+            ) : (
+              <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded">
+                OUT OF MAHARASHTRA
+              </span>
+            )}
+          </span>
+          {shippingFee === 0 ? (
+            <span className="text-emerald-700 font-bold">
+              FREE (₹0)
             </span>
-          </span>
-          <span className="text-emerald-700 font-bold">
-            FREE (₹0)
-          </span>
+          ) : (
+            <span className="text-[#1E1A17] font-bold">
+              ₹{shippingFee.toLocaleString('en-IN')}
+            </span>
+          )}
         </div>
 
         {/* Total calculation */}
         <div className="pt-3 border-t-2 border-[#1E1A17] flex justify-between items-baseline">
           <span className="font-display font-bold text-base sm:text-lg text-[#1E1A17]">
-            Total Amount
+            Total Payable
           </span>
           <span className="font-display font-bold text-2xl sm:text-3xl text-[#1E1A17]">
             ₹{finalTotal.toLocaleString('en-IN')}
