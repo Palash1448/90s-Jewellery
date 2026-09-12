@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, MessageCircle, ArrowRight, ShieldCheck, Star, Award, Search, ShoppingBag, Share2 } from 'lucide-react';
 import { Header } from '../components/common/Header';
-import { Footer } from '../components/common/Footer';
 import { Badge } from '../components/common/Badge';
 import { SeoMeta } from '../components/common/SeoMeta';
 import { ShareProductModal } from '../components/common/ShareProductModal';
@@ -274,8 +273,6 @@ export const HomePage: React.FC = () => {
           onClose={() => setSharingProduct(null)}
         />
       )}
-
-      <Footer />
     </div>
   );
 };

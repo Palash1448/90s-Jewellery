@@ -13,7 +13,6 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { Header } from '../components/common/Header';
-import { Footer } from '../components/common/Footer';
 import { Badge } from '../components/common/Badge';
 import { SeoMeta } from '../components/common/SeoMeta';
 import { getOrderById } from '../services/orderService';
@@ -77,7 +76,6 @@ export const OrderSuccessPage: React.FC = () => {
             </Link>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -197,8 +195,6 @@ export const OrderSuccessPage: React.FC = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

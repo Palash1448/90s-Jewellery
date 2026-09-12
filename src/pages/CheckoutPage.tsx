@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft, Lock, ShoppingBag, ChevronDown, AlertCircle } from 'lucide-react';
 import { useProduct } from '../hooks/useProduct';
-import { Footer } from '../components/common/Footer';
 import { CustomerForm, type CustomerFormData } from '../components/checkout/CustomerForm';
 import { AddressForm } from '../components/checkout/AddressForm';
 import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
@@ -349,8 +348,6 @@ export const CheckoutPage: React.FC = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
