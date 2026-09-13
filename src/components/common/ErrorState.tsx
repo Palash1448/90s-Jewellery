@@ -47,7 +47,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 
         <div className="mt-6 pt-6 border-t border-[#E8E2D8]">
           <a
-            href="https://wa.me/919876543210?text=Hi,%20I%20need%20help%20with%20an%20issue%20on%20the%20website."
+            href="https://wa.me/917507629997?text=Hi,%20I%20need%20help%20with%20an%20issue%20on%20the%20website."
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-emerald-700 hover:text-emerald-800 font-semibold inline-flex items-center gap-1.5"

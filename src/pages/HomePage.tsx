@@ -102,7 +102,7 @@ export const HomePage: React.FC = () => {
               </a>
 
               <a
-                href="https://wa.me/919876543210?text=Hi%2090s%20chya%20athavani%20Jewellery,%20please%20share%20your%20latest%20jewellery%20catalogue."
+                href="https://wa.me/917507629997?text=Hi%2090s%20chya%20athavani%20Jewellery,%20please%20share%20your%20latest%20jewellery%20catalogue."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-[#25D366] hover:bg-[#20be5a] text-white px-6 py-3.5 rounded-full font-bold text-sm shadow transition-all active:scale-95"

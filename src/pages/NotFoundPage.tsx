@@ -29,7 +29,7 @@ export const NotFoundPage: React.FC = () => {
               Browse Catalogue
             </Link>
             <a
-              href="https://wa.me/919876543210"
+              href="https://wa.me/917507629997"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto bg-[#25D366] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"

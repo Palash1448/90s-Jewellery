@@ -12,7 +12,7 @@ export const Header: React.FC = () => {
   }, []);
 
   const brandName = settings?.brandName || import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery';
-  const whatsappNumber = settings?.whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '919876543210';
+  const whatsappNumber = settings?.whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '917507629997';
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/98 backdrop-blur-md border-b border-[#E8E2D8] transition-all">

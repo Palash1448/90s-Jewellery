@@ -49,7 +49,7 @@ export const ProductPage: React.FC = () => {
                 Browse Catalogue
               </Link>
               <a
-                href="https://wa.me/919876543210?text=Hi,%20I%20am%20looking%20for%20a%20product%20link."
+                href="https://wa.me/917507629997?text=Hi,%20I%20am%20looking%20for%20a%20product%20link."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto bg-[#25D366] text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
@@ -83,7 +83,7 @@ export const ProductPage: React.FC = () => {
             </p>
             <div className="pt-2">
               <a
-                href={`https://wa.me/919876543210?text=Hi,%20is%20${encodeURIComponent(product.name)}%20available%20soon?`}
+                href={`https://wa.me/917507629997?text=Hi,%20is%20${encodeURIComponent(product.name)}%20available%20soon?`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#25D366] hover:bg-[#20be5a] text-white px-6 py-3 rounded-xl text-xs font-bold inline-flex items-center gap-2 shadow"

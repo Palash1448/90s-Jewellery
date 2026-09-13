@@ -92,11 +92,11 @@ export const Footer: React.FC = () => {
           <div className="space-y-2 text-xs text-[#C2B7A8]">
             <p className="flex items-center gap-2">
               <MessageCircle className="w-4 h-4 text-emerald-400" />
-              <span>WhatsApp: +{settings?.whatsappNumber || '91 9876543210'}</span>
+              <span>WhatsApp: +{settings?.whatsappNumber || '91 7507629997'}</span>
             </p>
             <p className="flex items-center gap-2">
               <PhoneCall className="w-4 h-4 text-[#D4AF37]" />
-              <span>Helpline: {settings?.contactNumber || '+91 98765 43210'}</span>
+              <span>Helpline: {settings?.contactNumber || '+91 75076 29997'}</span>
             </p>
             <p className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-[#D4AF37]" />

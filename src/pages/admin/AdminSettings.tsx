@@ -102,7 +102,7 @@ export const AdminSettings: React.FC = () => {
             <label className="block font-bold text-[#3B3229] uppercase mb-1">Primary WhatsApp Number (with country code)</label>
             <input
               type="text"
-              placeholder="e.g. 919876543210"
+              placeholder="e.g. 917507629997"
               value={settings.whatsappNumber}
               onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
               className="w-full px-3.5 py-2.5 bg-[#FAF8F5] border border-[#D9CFBE] focus:border-[#BA9541] rounded-xl text-[#1E1A17] font-mono font-bold"

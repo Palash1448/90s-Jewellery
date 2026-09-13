@@ -20,7 +20,7 @@ export const StickyMobileCTA: React.FC<StickyMobileCTAProps> = ({ product }) => 
 
   const brandName = import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery';
   const whatsappLink = buildWhatsAppLink(
-    import.meta.env.VITE_WHATSAPP_NUMBER || '919876543210',
+    import.meta.env.VITE_WHATSAPP_NUMBER || '917507629997',
     `Hi ${brandName}, I want to purchase ${product.name} (₹${product.price}). Link: ${window.location.href}`
   );
 

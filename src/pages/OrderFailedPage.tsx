@@ -77,7 +77,7 @@ export const OrderFailedPage: React.FC = () => {
             )}
 
             <a
-              href={`https://wa.me/919876543210?text=Hi%2090s%20chya%20athavani%20Jewellery,%20my%20payment%20failed%20for%20order%20${order?.orderNumber || 'reference'}.%20Please%20help.`}
+              href={`https://wa.me/917507629997?text=Hi%2090s%20chya%20athavani%20Jewellery,%20my%20payment%20failed%20for%20order%20${order?.orderNumber || 'reference'}.%20Please%20help.`}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20be5a] text-white px-7 py-3.5 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95"

@@ -16,7 +16,7 @@ export function buildWhatsAppLink(phone: string, text: string): string {
  */
 export async function getProductWhatsAppLink(product: Product): Promise<string> {
   const settings = await getStoreSettings();
-  const phone = settings.whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '919876543210';
+  const phone = settings.whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '917507629997';
   const baseUrl = window.location.origin;
   const productUrl = `${baseUrl}/p/${product.slug}`;
 
@@ -38,7 +38,7 @@ Please share availability and payment details.`;
  */
 export async function getOrderWhatsAppLink(order: Order): Promise<string> {
   const settings = await getStoreSettings();
-  const phone = settings.whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '919876543210';
+  const phone = settings.whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '917507629997';
 
   const message = `Hi ${settings.brandName || '90s chya athavani Jewellery'}, I have a question regarding my Order #${order.orderNumber}.
 
