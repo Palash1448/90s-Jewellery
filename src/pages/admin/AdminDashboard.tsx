@@ -43,15 +43,15 @@ export const AdminDashboard: React.FC = () => {
     loadData();
   }, []);
 
-  // Compute Metrics
+  // Compute Metrics (Focus on 100% verified paid orders since COD is removed)
   const totalProducts = products.length;
   const activeProducts = products.filter((p) => p.status === 'active').length;
-  const totalOrders = orders.length;
   const paidOrders = orders.filter((o) => o.paymentStatus === 'paid');
-  const pendingOrders = orders.filter((o) => o.paymentStatus === 'pending');
   const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const newOrdersToShip = paidOrders.filter((o) => o.orderStatus === 'new' || o.orderStatus === 'confirmed' || o.orderStatus === 'processing');
+  const deliveredOrders = paidOrders.filter((o) => o.orderStatus === 'delivered' || o.orderStatus === 'shipped');
 
-  const recentOrders = orders.slice(0, 5);
+  const recentOrders = paidOrders.slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -97,7 +97,7 @@ export const AdminDashboard: React.FC = () => {
           icon={IndianRupee}
           colorVariant="gold"
           trend="+18.4% this month"
-          subtitle="Verified paid transactions"
+          subtitle="Verified prepaid transactions"
         />
 
         <StatCard
@@ -105,23 +105,23 @@ export const AdminDashboard: React.FC = () => {
           value={paidOrders.length}
           icon={CheckCircle2}
           colorVariant="emerald"
-          subtitle={`${paidOrders.length} of ${totalOrders} orders completed`}
+          subtitle="100% online prepaid orders"
         />
 
         <StatCard
-          title="Pending Payments"
-          value={pendingOrders.length}
+          title="Orders To Dispatch"
+          value={newOrdersToShip.length}
           icon={Clock}
           colorVariant="amber"
-          subtitle="Awaiting customer completion"
+          subtitle="Awaiting packaging & courier pickup"
         />
 
         <StatCard
-          title="Total Orders"
-          value={totalOrders}
+          title="Dispatched / Delivered"
+          value={deliveredOrders.length}
           icon={ShoppingBag}
           colorVariant="blue"
-          subtitle="All-time initiated orders"
+          subtitle="Parcels shipped to customers"
         />
 
         <StatCard

@@ -103,7 +103,7 @@ export async function getAllCustomers(ordersList?: Order[]): Promise<Customer[]>
     list = getLocalCustomers();
   }
 
-  // If orders provided, aggregate stats
+  // If orders provided, aggregate stats based on verified paid orders
   if (ordersList && ordersList.length > 0) {
     return list.map((customer) => {
       const customerOrders = ordersList.filter(
@@ -113,13 +113,13 @@ export async function getAllCustomers(ordersList?: Order[]): Promise<Customer[]>
       );
       const paidOrders = customerOrders.filter((o) => o.paymentStatus === 'paid');
       const totalSpent = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-      const lastOrder = customerOrders.sort(
+      const lastOrder = paidOrders.sort(
         (a, b) => parseFirebaseDate(b.createdAt).getTime() - parseFirebaseDate(a.createdAt).getTime()
       )[0];
 
       return {
         ...customer,
-        totalOrders: customerOrders.length,
+        totalOrders: paidOrders.length,
         totalSpent,
         lastOrderDate: lastOrder ? formatOrderDate(lastOrder.createdAt) : undefined,
       };

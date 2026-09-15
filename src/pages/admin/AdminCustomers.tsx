@@ -43,8 +43,9 @@ export const AdminCustomers: React.FC = () => {
   const getCustomerOrders = (customer: Customer) => {
     return allOrders.filter(
       (o) =>
-        o.customerId === customer.id ||
-        o.customerSnapshot?.mobile?.replace(/[^0-9]/g, '') === customer.mobile.replace(/[^0-9]/g, '')
+        (o.customerId === customer.id ||
+          o.customerSnapshot?.mobile?.replace(/[^0-9]/g, '') === customer.mobile.replace(/[^0-9]/g, '')) &&
+        o.paymentStatus === 'paid'
     );
   };
 
