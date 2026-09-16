@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 import { StatCard } from '../../components/admin/StatCard';
 import { Badge } from '../../components/common/Badge';
+import { InlineOrderStatusSelect, InlinePaymentStatusSelect } from '../../components/admin/InlineStatusSelect';
 import { getAllProducts, seedInitialProducts } from '../../services/productService';
-import { getAllOrders } from '../../services/orderService';
-import type { Product, Order } from '../../types';
+import { getAllOrders, updateOrderStatus, updateOrderPaymentStatus } from '../../services/orderService';
+import type { Product, Order, OrderStatus, PaymentStatus } from '../../types';
 
 export const AdminDashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -43,15 +44,35 @@ export const AdminDashboard: React.FC = () => {
     loadData();
   }, []);
 
-  // Compute Metrics (Focus on 100% verified paid orders since COD is removed)
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      const updated = await updateOrderStatus(orderId, newStatus);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (orderId: string, newStatus: PaymentStatus) => {
+    try {
+      const updated = await updateOrderPaymentStatus(orderId, newStatus);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+    } catch (err) {
+      console.error('Failed to update payment status:', err);
+    }
+  };
+
+  // Compute Metrics
   const totalProducts = products.length;
   const activeProducts = products.filter((p) => p.status === 'active').length;
+  const confirmedOrders = orders.filter((o) => o.paymentStatus === 'paid' || o.paymentMethod === 'COD');
   const paidOrders = orders.filter((o) => o.paymentStatus === 'paid');
-  const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-  const newOrdersToShip = paidOrders.filter((o) => o.orderStatus === 'new' || o.orderStatus === 'confirmed' || o.orderStatus === 'processing');
-  const deliveredOrders = paidOrders.filter((o) => o.orderStatus === 'delivered' || o.orderStatus === 'shipped');
+  const codOrders = orders.filter((o) => o.paymentMethod === 'COD');
+  const totalRevenue = confirmedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const newOrdersToShip = confirmedOrders.filter((o) => o.orderStatus === 'new' || o.orderStatus === 'confirmed' || o.orderStatus === 'processing');
+  const deliveredOrders = confirmedOrders.filter((o) => o.orderStatus === 'delivered' || o.orderStatus === 'shipped');
 
-  const recentOrders = paidOrders.slice(0, 5);
+  const recentOrders = confirmedOrders.slice(0, 5);
 
   return (
     <div className="space-y-8">
@@ -97,15 +118,15 @@ export const AdminDashboard: React.FC = () => {
           icon={IndianRupee}
           colorVariant="gold"
           trend="+18.4% this month"
-          subtitle="Verified prepaid transactions"
+          subtitle="Prepaid & COD gross order value"
         />
 
         <StatCard
-          title="Paid Orders"
-          value={paidOrders.length}
+          title="Confirmed Orders"
+          value={confirmedOrders.length}
           icon={CheckCircle2}
           colorVariant="emerald"
-          subtitle="100% online prepaid orders"
+          subtitle={`${paidOrders.length} Prepaid • ${codOrders.length} COD`}
         />
 
         <StatCard
@@ -260,7 +281,18 @@ export const AdminDashboard: React.FC = () => {
               {recentOrders.map((ord) => (
                 <div key={ord.id} className="py-3.5 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-xs text-[#1E1A17]">{ord.orderNumber}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-xs text-[#1E1A17]">{ord.orderNumber}</span>
+                      {ord.paymentMethod === 'COD' ? (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                          💵 COD
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          ⚡ ONLINE
+                        </span>
+                      )}
+                    </div>
                     <span className="font-bold text-xs text-[#1E1A17]">₹{ord.total.toLocaleString('en-IN')}</span>
                   </div>
 
@@ -276,9 +308,17 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-[#F8F4EE]">
-                    <div className="flex items-center gap-1.5">
-                      <Badge status={ord.paymentStatus} type="payment" />
-                      <Badge status={ord.orderStatus} type="order" />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <InlineOrderStatusSelect
+                        orderId={ord.id}
+                        currentStatus={ord.orderStatus}
+                        onUpdate={handleUpdateOrderStatus}
+                      />
+                      <InlinePaymentStatusSelect
+                        orderId={ord.id}
+                        currentStatus={ord.paymentStatus}
+                        onUpdate={handleUpdatePaymentStatus}
+                      />
                     </div>
 
                     <Link
@@ -302,8 +342,9 @@ export const AdminDashboard: React.FC = () => {
                     <th className="py-3 px-4">Customer</th>
                     <th className="py-3 px-4">Product</th>
                     <th className="py-3 px-4">Amount</th>
-                    <th className="py-3 px-4">Payment</th>
-                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Payment Method</th>
+                    <th className="py-3 px-4">Fulfillment Status</th>
+                    <th className="py-3 px-4">Payment Status</th>
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
                 </thead>
@@ -327,10 +368,29 @@ export const AdminDashboard: React.FC = () => {
                         ₹{ord.total.toLocaleString('en-IN')}
                       </td>
                       <td className="py-3.5 px-4">
-                        <Badge status={ord.paymentStatus} type="payment" />
+                        {ord.paymentMethod === 'COD' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-200">
+                            💵 COD (+₹{ord.codCharge || 40})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            ⚡ ONLINE
+                          </span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4">
-                        <Badge status={ord.orderStatus} type="order" />
+                        <InlineOrderStatusSelect
+                          orderId={ord.id}
+                          currentStatus={ord.orderStatus}
+                          onUpdate={handleUpdateOrderStatus}
+                        />
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <InlinePaymentStatusSelect
+                          orderId={ord.id}
+                          currentStatus={ord.paymentStatus}
+                          onUpdate={handleUpdatePaymentStatus}
+                        />
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <Link

@@ -10,7 +10,9 @@ import {
   Clock,
   ShieldCheck,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Banknote,
+  AlertCircle
 } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { Badge } from '../components/common/Badge';
@@ -80,6 +82,8 @@ export const OrderSuccessPage: React.FC = () => {
     );
   }
 
+  const isCod = order.paymentMethod === 'COD';
+
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex flex-col">
       <SeoMeta title={`Order Confirmed #${order.orderNumber} | 90s chya athavani Jewellery`} />
@@ -88,21 +92,51 @@ export const OrderSuccessPage: React.FC = () => {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#E8DCBE] shadow-xl text-center space-y-6">
           {/* Confirmed Icon */}
-          <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 border-2 border-emerald-300 flex items-center justify-center mx-auto shadow-inner">
-            <CheckCircle2 className="w-10 h-10" />
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto shadow-inner border-2 ${
+            isCod
+              ? 'bg-amber-50 text-amber-600 border-amber-300'
+              : 'bg-emerald-50 text-emerald-600 border-emerald-300'
+          }`}>
+            {isCod ? <Banknote className="w-10 h-10 text-[#BA9541]" /> : <CheckCircle2 className="w-10 h-10" />}
           </div>
 
           <div>
-            <span className="text-xs font-bold text-emerald-700 tracking-widest uppercase block mb-1">
-              Payment Verified & Confirmed
+            <span className={`text-xs font-bold tracking-widest uppercase block mb-1 ${
+              isCod ? 'text-[#805E25]' : 'text-emerald-700'
+            }`}>
+              {isCod ? '💵 Cash on Delivery Order Placed' : '⚡ Payment Verified & Confirmed'}
             </span>
             <h1 className="font-display font-bold text-3xl sm:text-4xl text-[#1E1A17]">
-              🎉 Order Confirmed!
+              {isCod ? '🎉 COD Order Confirmed!' : '🎉 Order Confirmed!'}
             </h1>
             <p className="text-sm text-[#73685C] max-w-md mx-auto mt-2 leading-relaxed">
-              Thank you for your order, <strong>{order.customerSnapshot?.name}</strong>! We are carefully packaging your jewellery in our signature velvet keepsake box.
+              {isCod ? (
+                <>
+                  Thank you for your order, <strong>{order.customerSnapshot?.name}</strong>! We are preparing your parcel for dispatch. Please keep{' '}
+                  <strong className="text-[#1E1A17] font-bold">₹{order.total.toLocaleString('en-IN')}</strong> ready in cash or UPI upon delivery.
+                </>
+              ) : (
+                <>
+                  Thank you for your order, <strong>{order.customerSnapshot?.name}</strong>! We are carefully packaging your jewellery in our signature velvet keepsake box.
+                </>
+              )}
             </p>
           </div>
+
+          {/* COD Special Notice Box */}
+          {isCod && (
+            <div className="bg-amber-50/90 border border-amber-200 rounded-2xl p-4 text-left flex items-start gap-3 text-xs text-amber-900 shadow-xs">
+              <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block text-sm mb-0.5 text-amber-950">
+                  Pay ₹{order.total.toLocaleString('en-IN')} at Delivery
+                </span>
+                <span>
+                  Our delivery executive will collect the cash or accept a UPI QR scan at your doorstep. Please ensure someone is available at your address.
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Order Number Banner */}
           <div className="bg-[#FAF6EE] border border-[#E5D7BD] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
@@ -140,7 +174,9 @@ export const OrderSuccessPage: React.FC = () => {
                 <h4 className="font-bold text-sm text-[#1E1A17]">{order.productName}</h4>
                 <p className="text-xs text-[#7A6F62] mt-0.5">Quantity: {order.quantity}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge status={order.paymentStatus} type="payment" />
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide border uppercase bg-[#FAF3E0] text-[#805E25] border-[#E0D0B4]">
+                    {isCod ? '💵 COD' : '⚡ ONLINE'}
+                  </span>
                   <Badge status={order.orderStatus} type="order" />
                 </div>
               </div>
@@ -158,14 +194,24 @@ export const OrderSuccessPage: React.FC = () => {
                 </strong>
               </div>
               <div>
-                <span className="text-[#8C8072] block">Shipping Charge:</span>
+                <span className="text-[#8C8072] block">
+                  {isCod ? 'Shipping & COD Fee:' : 'Shipping Charge:'}
+                </span>
                 <strong className="text-[#1E1A17]">
-                  {order.shipping === 0 ? 'FREE (₹0)' : `₹${order.shipping}`}
+                  {isCod
+                    ? `${order.shipping === 0 ? 'FREE' : `₹${order.shipping}`} + ₹${order.codCharge || 40} COD`
+                    : order.shipping === 0
+                    ? 'FREE (₹0)'
+                    : `₹${order.shipping}`}
                 </strong>
               </div>
               <div>
-                <span className="text-[#8C8072] block">Total Amount Paid:</span>
-                <strong className="text-[#1E1A17] font-bold text-emerald-800 text-sm">₹{order.total.toLocaleString('en-IN')}</strong>
+                <span className="text-[#8C8072] block">
+                  {isCod ? 'Payable on Delivery:' : 'Total Amount Paid:'}
+                </span>
+                <strong className={`text-sm font-bold ${isCod ? 'text-[#805E25]' : 'text-emerald-800'}`}>
+                  ₹{order.total.toLocaleString('en-IN')}
+                </strong>
               </div>
             </div>
           </div>
@@ -179,7 +225,7 @@ export const OrderSuccessPage: React.FC = () => {
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20be5a] text-white px-7 py-3.5 rounded-xl font-bold text-sm shadow-md transition-all active:scale-95"
             >
               <MessageCircle className="w-5 h-5 fill-current" />
-              <span>Chat on WhatsApp</span>
+              <span>Confirm on WhatsApp</span>
             </a>
 
             <Link

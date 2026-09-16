@@ -101,7 +101,8 @@ export async function createPendingOrder(params: {
   const discount = Math.max(0, mrp - unitPrice) * quantity;
   const subtotal = unitPrice * quantity;
   const shipping = calculateShippingCharge(address);
-  const total = subtotal + shipping;
+  const codCharge = paymentMethod === 'COD' ? 40 : 0;
+  const total = subtotal + shipping + codCharge;
 
   // If existing order ID provided, check and update it
   if (existingOrderId) {
@@ -117,6 +118,7 @@ export async function createPendingOrder(params: {
         mrp,
         discount,
         shipping,
+        codCharge,
         subtotal,
         total,
         customerSnapshot: {
@@ -170,6 +172,7 @@ export async function createPendingOrder(params: {
     mrp,
     discount,
     shipping,
+    codCharge,
     subtotal,
     total,
     customerSnapshot: {
@@ -204,6 +207,103 @@ export async function createPendingOrder(params: {
       });
     } catch (err) {
       console.warn('Firestore createPendingOrder warning:', err);
+    }
+  }
+
+  return orderData;
+}
+
+/**
+ * Create a confirmed Cash on Delivery (COD) order
+ */
+export async function createCodOrder(params: {
+  product: Product;
+  quantity: number;
+  customer: {
+    name: string;
+    mobile: string;
+    whatsapp: string;
+    email: string;
+  };
+  address: Address;
+  existingOrderId?: string;
+}): Promise<Order> {
+  const { product, quantity, customer, address, existingOrderId } = params;
+
+  // 1. Ensure customer is recorded
+  const customerRecord = await upsertCustomer(customer);
+
+  // 2. Compute accurate financial values with ₹40 COD handling charge
+  const unitPrice = product.price;
+  const mrp = product.mrp || product.price;
+  const discount = Math.max(0, mrp - unitPrice) * quantity;
+  const subtotal = unitPrice * quantity;
+  const shipping = calculateShippingCharge(address);
+  const codCharge = 40;
+  const total = subtotal + shipping + codCharge;
+
+  const orderId = existingOrderId || `order_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const orderNumber = generateOrderNumber();
+
+  const orderData: Order = {
+    id: orderId,
+    orderNumber,
+    customerId: customerRecord.id,
+    productId: product.id,
+    productName: product.name,
+    productImage: product.primaryImage || (product.images && product.images[0]) || '',
+    quantity,
+    unitPrice,
+    mrp,
+    discount,
+    shipping,
+    codCharge,
+    subtotal,
+    total,
+    customerSnapshot: {
+      name: customer.name.trim(),
+      mobile: customer.mobile.trim(),
+      whatsapp: (customer.whatsapp || customer.mobile).trim(),
+      email: (customer.email || '').trim(),
+    },
+    addressSnapshot: { ...address },
+    paymentMethod: 'COD',
+    paymentStatus: 'pending',
+    paymentVerified: false,
+    paymentTransactionId: 'COD_PENDING',
+    orderStatus: 'confirmed',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  // 3. Save to local cache
+  const list = getLocalOrders();
+  const existingIdx = list.findIndex((o) => o.id === orderId);
+  if (existingIdx !== -1) {
+    list[existingIdx] = orderData;
+  } else {
+    list.unshift(orderData);
+  }
+  saveLocalOrders(list);
+
+  // 4. Decrement product stock safely upon COD order confirmation
+  try {
+    await updateProductStock(product.id, quantity);
+  } catch (err) {
+    console.error('Stock deduction error on COD order:', err);
+  }
+
+  // 5. Save to Firestore
+  if (!isPlaceholderConfig) {
+    try {
+      const docRef = doc(db, 'orders', orderId);
+      await setDoc(docRef, {
+        ...orderData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('Firestore createCodOrder warning:', err);
     }
   }
 
@@ -440,3 +540,43 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
 
   return updated;
 }
+
+/**
+ * Update order payment status (Admin e.g. marking COD as paid upon collection)
+ */
+export async function updateOrderPaymentStatus(orderId: string, status: PaymentStatus): Promise<Order> {
+  const current = await getOrderById(orderId);
+  if (!current) throw new Error('Order not found.');
+
+  const updated: Order = {
+    ...current,
+    paymentStatus: status,
+    paymentVerified: status === 'paid' ? true : current.paymentVerified,
+    paidAt: status === 'paid' ? (current.paidAt || new Date().toISOString()) : current.paidAt,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const list = getLocalOrders();
+  const idx = list.findIndex((o) => o.id === orderId);
+  if (idx !== -1) {
+    list[idx] = updated;
+    saveLocalOrders(list);
+  }
+
+  if (!isPlaceholderConfig) {
+    try {
+      const docRef = doc(db, 'orders', orderId);
+      await updateDoc(docRef, {
+        paymentStatus: status,
+        paymentVerified: updated.paymentVerified,
+        paidAt: status === 'paid' ? (current.paidAt ? current.paidAt : serverTimestamp()) : null,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Firestore updateOrderPaymentStatus error:', err);
+    }
+  }
+
+  return updated;
+}
+

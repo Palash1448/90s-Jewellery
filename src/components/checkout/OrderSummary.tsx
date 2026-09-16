@@ -1,11 +1,14 @@
 import React from 'react';
-import { ShieldCheck, Truck, Sparkles, Lock, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Truck, Sparkles, Lock, ArrowRight, Banknote, CheckCircle2 } from 'lucide-react';
 import type { Product } from '../../types';
+import type { PaymentMethod } from './PaymentMethodSelector';
 
 interface OrderSummaryProps {
   product: Product;
   quantity: number;
   shippingFee?: number;
+  paymentMethod?: PaymentMethod;
+  codCharge?: number;
   state?: string;
   isSubmitting?: boolean;
   submittingText?: string;
@@ -16,6 +19,8 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   product,
   quantity,
   shippingFee = 50,
+  paymentMethod = 'ONLINE',
+  codCharge = 40,
   state,
   isSubmitting = false,
   submittingText,
@@ -26,11 +31,15 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   const subtotal = unitPrice * quantity;
   const totalMrp = mrp * quantity;
   const discountSavings = Math.max(0, totalMrp - subtotal);
-  const finalTotal = subtotal + shippingFee;
+  const codFee = paymentMethod === 'COD' ? codCharge : 0;
+  const finalTotal = subtotal + shippingFee + codFee;
 
   const productImage = product.primaryImage || (product.images && product.images[0]) || '';
 
-  const buttonLabel = 'PROCEED TO PAYMENT';
+  const buttonLabel =
+    paymentMethod === 'COD'
+      ? `PLACE COD ORDER — ₹${finalTotal.toLocaleString('en-IN')}`
+      : 'PROCEED TO PAYMENT';
 
   return (
     <div className="bg-[#FAF8F5] border border-[#E8E2D8] rounded-2xl p-5 sm:p-6 shadow-md space-y-5 sticky top-24">
@@ -97,10 +106,33 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           )}
         </div>
 
+        {/* COD Charge Row */}
+        {paymentMethod === 'COD' ? (
+          <div className="flex justify-between items-center text-[#5C5042]">
+            <span className="flex items-center gap-1.5">
+              <span>COD Handling Charge</span>
+              <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded border border-amber-200">
+                DOORSTEP CASH
+              </span>
+            </span>
+            <span className="font-bold text-[#805E25]">+₹{codCharge}</span>
+          </div>
+        ) : (
+          <div className="flex justify-between items-center text-[#5C5042]">
+            <span className="flex items-center gap-1.5">
+              <span>COD Handling Charge</span>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">
+                PREPAID SAVINGS
+              </span>
+            </span>
+            <span className="font-bold text-emerald-700">FREE (₹0)</span>
+          </div>
+        )}
+
         {/* Total calculation */}
         <div className="pt-3 border-t-2 border-[#1E1A17] flex justify-between items-baseline">
           <span className="font-display font-bold text-base sm:text-lg text-[#1E1A17]">
-            Total Payable
+            {paymentMethod === 'COD' ? 'Total to Pay on Delivery' : 'Total Payable'}
           </span>
           <span className="font-display font-bold text-2xl sm:text-3xl text-[#1E1A17]">
             ₹{finalTotal.toLocaleString('en-IN')}
@@ -122,7 +154,11 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
           </div>
         ) : (
           <>
-            <Lock className="w-4 h-4 text-[#D4AF37]" />
+            {paymentMethod === 'COD' ? (
+              <Banknote className="w-5 h-5 text-[#D4AF37]" />
+            ) : (
+              <Lock className="w-4 h-4 text-[#D4AF37]" />
+            )}
             <span>{buttonLabel}</span>
             <ArrowRight className="w-4 h-4" />
           </>
@@ -133,7 +169,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
       <div className="space-y-2 pt-2 border-t border-[#E8E2D8] text-[11px] text-[#6E6356]">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-          <span>256-Bit Bank-Grade SSL Encrypted Checkout</span>
+          <span>{paymentMethod === 'COD' ? 'Verified Cash on Delivery with Safe Packaging' : '256-Bit Bank-Grade SSL Encrypted Checkout'}</span>
         </div>
         <div className="flex items-center gap-2">
           <Truck className="w-4 h-4 text-[#BA9541] shrink-0" />

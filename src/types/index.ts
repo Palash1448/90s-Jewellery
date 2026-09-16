@@ -73,6 +73,7 @@ export interface Order {
   mrp: number;
   discount: number;
   shipping: number;
+  codCharge?: number;
   subtotal: number;
   total: number;
   customerSnapshot: {
@@ -103,6 +104,7 @@ export interface StoreSettings {
   contactNumber: string;
   email: string;
   defaultShippingCharge: number;
+  defaultCodCharge?: number;
   freeShippingThreshold: number;
   deliveryInfo: string;
   defaultWhatsAppMessage: string;

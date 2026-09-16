@@ -12,14 +12,16 @@ import {
   Printer,
   Clock,
   Phone,
-  Mail
+  Mail,
+  CheckCircle2,
+  Banknote
 } from 'lucide-react';
 import { Badge } from '../../components/common/Badge';
 import { OrderTimeline } from '../../components/admin/OrderTimeline';
-import { getOrderById, updateOrderStatus } from '../../services/orderService';
+import { getOrderById, updateOrderStatus, updateOrderPaymentStatus } from '../../services/orderService';
 import { getAdminToCustomerWhatsAppLink } from '../../services/whatsappService';
 import { formatOrderDateTime } from '../../utils/dateUtils';
-import type { Order, OrderStatus } from '../../types';
+import type { Order, OrderStatus, PaymentStatus } from '../../types';
 
 export const AdminOrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +52,19 @@ export const AdminOrderDetails: React.FC = () => {
     }
   };
 
+  const handleUpdatePaymentStatus = async (newPaymentStatus: PaymentStatus) => {
+    if (!id || !order) return;
+    setIsUpdating(true);
+    try {
+      const updated = await updateOrderPaymentStatus(id, newPaymentStatus);
+      setOrder(updated);
+    } catch (err: any) {
+      alert(`Failed to update payment status: ${err.message}`);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-12 text-center text-xs text-[#73685C]">Loading order details...</div>;
   }
@@ -68,6 +83,7 @@ export const AdminOrderDetails: React.FC = () => {
     );
   }
 
+  const isCod = order.paymentMethod === 'COD';
   const customerPhone = order.customerSnapshot?.whatsapp || order.customerSnapshot?.mobile;
   const waLink = customerPhone
     ? getAdminToCustomerWhatsAppLink(customerPhone, order.orderNumber, order.customerSnapshot?.name || 'Valued Customer')
@@ -85,10 +101,19 @@ export const AdminOrderDetails: React.FC = () => {
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="font-display font-bold text-xl sm:text-2xl text-[#1E1A17]">
                 Order #{order.orderNumber}
               </h2>
+              {isCod ? (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                  💵 COD (+₹{order.codCharge || 40})
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  ⚡ PREPAID (Razorpay)
+                </span>
+              )}
               <Badge status={order.orderStatus} type="order" />
               <Badge status={order.paymentStatus} type="payment" />
             </div>
@@ -162,40 +187,42 @@ export const AdminOrderDetails: React.FC = () => {
             </div>
 
             {order.customerSnapshot?.email && (
-              <div className="pt-1">
+              <div>
                 <span className="text-[#8C8072] block uppercase font-bold text-[10px]">Email:</span>
-                <span className="text-[#1E1A17] font-medium flex items-center gap-1">
+                <span className="text-[#1E1A17] flex items-center gap-1">
                   <Mail className="w-3 h-3 text-[#BA9541]" />
-                  <span>{order.customerSnapshot.email}</span>
+                  <span>{order.customerSnapshot?.email}</span>
                 </span>
               </div>
             )}
 
             <div className="pt-3 border-t border-[#EFE9DF]">
-              <span className="text-[#8C8072] block uppercase font-bold text-[10px] mb-1">
-                Delivery Address:
-              </span>
-              <div className="p-3 bg-[#FAF8F5] border border-[#E8E2D8] rounded-xl text-xs text-[#3E342B] leading-relaxed space-y-0.5">
-                <p className="font-semibold">{order.addressSnapshot?.addressLine}</p>
-                <p>{order.addressSnapshot?.area}</p>
-                {order.addressSnapshot?.landmark && (
-                  <p className="text-[#8C8072]">Landmark: {order.addressSnapshot.landmark}</p>
-                )}
-                <p className="font-bold text-[#1E1A17]">
-                  {order.addressSnapshot?.city}, {order.addressSnapshot?.state} — {order.addressSnapshot?.pincode}
-                </p>
-                <p className="text-[11px] font-semibold text-[#805E25]">{order.addressSnapshot?.country}</p>
+              <div className="flex items-center gap-1.5 text-[#BA9541] font-bold uppercase text-[10px] mb-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>Shipping Destination:</span>
               </div>
+              <p className="text-[#1E1A17] font-medium leading-relaxed bg-[#FAF8F5] p-3 rounded-xl border border-[#E8E2D8]">
+                {order.addressSnapshot?.addressLine}
+                <br />
+                {order.addressSnapshot?.area}
+                {order.addressSnapshot?.landmark ? `, ${order.addressSnapshot.landmark}` : ''}
+                <br />
+                <strong>
+                  {order.addressSnapshot?.city}, {order.addressSnapshot?.state} — {order.addressSnapshot?.pincode}
+                </strong>
+                <br />
+                <span className="text-[#73685C] text-[11px]">{order.addressSnapshot?.country || 'India'}</span>
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Product & Payment Snapshot */}
+        {/* Product & Payment Summary */}
         <div className="bg-white rounded-3xl p-6 border border-[#E8E2D8] shadow-sm space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-[#EFE9DF]">
             <Package className="w-4 h-4 text-[#BA9541]" />
             <h3 className="font-display font-bold text-base text-[#1E1A17]">
-              Product & Financial Details
+              Financial Summary & Payment
             </h3>
           </div>
 
@@ -236,8 +263,15 @@ export const AdminOrderDetails: React.FC = () => {
                 </span>
               </div>
 
+              {isCod && (
+                <div className="flex justify-between text-[#805E25]">
+                  <span>Cash on Delivery Handling Fee</span>
+                  <span className="font-semibold">+₹{order.codCharge || 40}</span>
+                </div>
+              )}
+
               <div className="pt-2 border-t-2 border-[#1E1A17] flex justify-between items-baseline font-bold text-sm sm:text-base text-[#1E1A17]">
-                <span>Total Amount Paid</span>
+                <span>{isCod ? 'Total to Collect on Delivery' : 'Total Amount Paid'}</span>
                 <span className="font-display text-xl sm:text-2xl text-[#1E1A17]">
                   ₹{order.total.toLocaleString('en-IN')}
                 </span>
@@ -245,17 +279,39 @@ export const AdminOrderDetails: React.FC = () => {
             </div>
 
             {/* Payment Transaction Details */}
-            <div className="pt-3 border-t border-[#EFE9DF] space-y-2">
+            <div className="pt-3 border-t border-[#EFE9DF] space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] uppercase font-bold text-[#8C8072]">Payment Mode:</span>
                 <span className="text-xs font-bold text-[#1E1A17] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E8E2D8]">
-                  {order.paymentMethod === 'COD' ? '💵 Cash on Delivery (COD)' : '⚡ Online (Razorpay)'}
+                  {isCod ? '💵 Cash on Delivery (COD)' : '⚡ Online (Razorpay)'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-[10px] uppercase font-bold text-[#8C8072]">Payment Status:</span>
-                <Badge status={order.paymentStatus} type="payment" />
+                <div className="flex items-center gap-2">
+                  <Badge status={order.paymentStatus} type="payment" />
+                  {isCod && order.paymentStatus !== 'paid' && (
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => handleUpdatePaymentStatus('paid')}
+                      className="text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-0.5 rounded transition-colors"
+                    >
+                      Mark as Cash Collected
+                    </button>
+                  )}
+                  {isCod && order.paymentStatus === 'paid' && (
+                    <button
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => handleUpdatePaymentStatus('pending')}
+                      className="text-[10px] font-medium text-amber-700 hover:underline"
+                    >
+                      Revert to Pending
+                    </button>
+                  )}
+                </div>
               </div>
 
               {order.razorpayOrderId && (
@@ -270,7 +326,7 @@ export const AdminOrderDetails: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] uppercase font-bold text-[#8C8072]">Payment ID / TXN:</span>
                 <span className="font-mono text-xs font-semibold text-[#1E1A17] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E8E2D8]">
-                  {order.razorpayPaymentId || order.paymentTransactionId || 'PENDING'}
+                  {order.razorpayPaymentId || order.paymentTransactionId || (isCod ? 'COD_PENDING' : 'PENDING')}
                 </span>
               </div>
 

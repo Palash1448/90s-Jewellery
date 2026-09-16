@@ -17,7 +17,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Badge } from '../../components/common/Badge';
-import { getAllOrders } from '../../services/orderService';
+import { InlineOrderStatusSelect, InlinePaymentStatusSelect } from '../../components/admin/InlineStatusSelect';
+import { getAllOrders, updateOrderStatus, updateOrderPaymentStatus } from '../../services/orderService';
 import { getAdminToCustomerWhatsAppLink } from '../../services/whatsappService';
 import {
   formatOrderDate,
@@ -29,17 +30,18 @@ import {
   isDateInRange,
   formatFriendlyDateKey
 } from '../../utils/dateUtils';
-import type { Order } from '../../types';
+import type { Order, OrderStatus, PaymentStatus } from '../../types';
 
 type DatePreset = 'all' | 'today' | 'yesterday' | 'last7' | 'thisMonth' | 'specific' | 'range';
-type ViewTab = 'paid' | 'unpaid';
+type ViewTab = 'confirmed' | 'unpaid';
 
 export const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [activeTab, setActiveTab] = useState<ViewTab>('paid');
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<ViewTab>('confirmed');
 
   // Date filtering state
   const [datePreset, setDatePreset] = useState<DatePreset>('all');
@@ -66,17 +68,35 @@ export const AdminOrders: React.FC = () => {
     fetchOrders();
   }, []);
 
-  // Split into Paid vs Incomplete checkouts
-  const paidOrders = useMemo(() => {
-    return orders.filter((o) => o.paymentStatus === 'paid');
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      const updated = await updateOrderStatus(orderId, newStatus);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+    } catch (err) {
+      console.error('Failed to update order status:', err);
+    }
+  };
+
+  const handleUpdatePaymentStatus = async (orderId: string, newStatus: PaymentStatus) => {
+    try {
+      const updated = await updateOrderPaymentStatus(orderId, newStatus);
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? updated : o)));
+    } catch (err) {
+      console.error('Failed to update payment status:', err);
+    }
+  };
+
+  // Split into Confirmed (Prepaid + COD) vs Incomplete / Abandoned checkouts
+  const confirmedOrders = useMemo(() => {
+    return orders.filter((o) => o.paymentStatus === 'paid' || o.paymentMethod === 'COD');
   }, [orders]);
 
   const unpaidOrders = useMemo(() => {
-    return orders.filter((o) => o.paymentStatus !== 'paid');
+    return orders.filter((o) => o.paymentMethod !== 'COD' && o.paymentStatus !== 'paid');
   }, [orders]);
 
   // Current working orders list based on active tab
-  const currentTabOrders = activeTab === 'paid' ? paidOrders : unpaidOrders;
+  const currentTabOrders = activeTab === 'confirmed' ? confirmedOrders : unpaidOrders;
 
   // Precompute quick preset counts for the active tab
   const todayCount = useMemo(() => {
@@ -137,7 +157,10 @@ export const AdminOrders: React.FC = () => {
       // 2. Status Filter
       const matchesStatus = statusFilter === 'all' || o.orderStatus === statusFilter;
 
-      // 3. Date Filter
+      // 3. Payment Method Filter
+      const matchesMethod = paymentMethodFilter === 'all' || (o.paymentMethod || 'ONLINE') === paymentMethodFilter;
+
+      // 4. Date Filter
       let matchesDate = true;
       if (datePreset === 'today') {
         matchesDate = isSameDay(o.createdAt, todayKey);
@@ -149,20 +172,19 @@ export const AdminOrders: React.FC = () => {
         matchesDate = isDateInRange(o.createdAt, startDate, endDate);
       }
 
-      return matchesSearch && matchesStatus && matchesDate;
+      return matchesSearch && matchesStatus && matchesMethod && matchesDate;
     });
-  }, [currentTabOrders, search, statusFilter, datePreset, selectedDate, startDate, endDate, todayKey, yesterdayKey]);
+  }, [currentTabOrders, search, statusFilter, paymentMethodFilter, datePreset, selectedDate, startDate, endDate, todayKey, yesterdayKey]);
 
   // Aggregate stats for filtered result
   const filteredTotalRevenue = useMemo(() => {
-    return filtered
-      .filter((o) => o.paymentStatus === 'paid')
-      .reduce((sum, o) => sum + (o.total || 0), 0);
+    return filtered.reduce((sum, o) => sum + (o.total || 0), 0);
   }, [filtered]);
 
   const hasActiveFilters =
     search !== '' ||
     statusFilter !== 'all' ||
+    paymentMethodFilter !== 'all' ||
     datePreset !== 'all' ||
     selectedDate !== '' ||
     startDate !== '' ||
@@ -171,6 +193,7 @@ export const AdminOrders: React.FC = () => {
   const resetAllFilters = () => {
     setSearch('');
     setStatusFilter('all');
+    setPaymentMethodFilter('all');
     setDatePreset('all');
     setSelectedDate('');
     setStartDate('');
@@ -195,30 +218,30 @@ export const AdminOrders: React.FC = () => {
             <span>Orders & Sales</span>
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{paidOrders.length} Paid Orders</span>
+              <span>{confirmedOrders.length} Confirmed Orders</span>
             </span>
           </h2>
           <p className="text-xs text-[#73685C]">
-            Track verified prepaid customer shipments, order fulfillment, and WhatsApp communication
+            Track verified prepaid and Cash on Delivery customer shipments, order fulfillment, and WhatsApp communication
           </p>
         </div>
 
-        {/* View Tabs: Paid Orders (Default) vs Incomplete */}
+        {/* View Tabs: Confirmed Orders (Default) vs Incomplete */}
         <div className="flex items-center bg-[#FAF8F5] p-1 rounded-2xl border border-[#E8E2D8] self-start sm:self-auto">
           <button
             type="button"
             onClick={() => {
-              setActiveTab('paid');
+              setActiveTab('confirmed');
               resetAllFilters();
             }}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeTab === 'paid'
+              activeTab === 'confirmed'
                 ? 'bg-[#1E1A17] text-white shadow-xs'
                 : 'text-[#73685C] hover:text-[#1E1A17]'
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span>Paid Orders ({paidOrders.length})</span>
+            <span>Confirmed Orders ({confirmedOrders.length})</span>
           </button>
 
           <button
@@ -234,7 +257,7 @@ export const AdminOrders: React.FC = () => {
             }`}
           >
             <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-            <span>Incomplete / Failed ({unpaidOrders.length})</span>
+            <span>Incomplete Checkouts ({unpaidOrders.length})</span>
           </button>
         </div>
       </div>
@@ -406,14 +429,14 @@ export const AdminOrders: React.FC = () => {
           </div>
         </div>
 
-        {/* Row 2: Search Bar & Fulfillment Filter */}
-        <div className="pt-3 border-t border-[#F2ECE1] grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Row 2: Search Bar & Fulfillment & Payment Filters */}
+        <div className="pt-3 border-t border-[#F2ECE1] grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Search */}
           <div className="relative">
             <Search className="w-4 h-4 text-[#8C8072] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search Order #, Customer Name, Phone number..."
+              placeholder="Search Order #, Customer Name, Phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-[#FAF8F5] border border-[#D9CFBE] focus:border-[#BA9541] rounded-xl text-xs text-[#1E1A17] focus:outline-none"
@@ -446,6 +469,20 @@ export const AdminOrders: React.FC = () => {
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
+
+          {/* Payment Method Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-[#73685C] shrink-0">Payment:</span>
+            <select
+              value={paymentMethodFilter}
+              onChange={(e) => setPaymentMethodFilter(e.target.value)}
+              className="w-full px-3 py-2 bg-[#FAF8F5] border border-[#D9CFBE] rounded-xl text-xs text-[#1E1A17] focus:outline-none focus:border-[#BA9541]"
+            >
+              <option value="all">All Payment Methods</option>
+              <option value="ONLINE">⚡ Online (Razorpay)</option>
+              <option value="COD">💵 Cash on Delivery (COD)</option>
+            </select>
+          </div>
         </div>
 
         {/* Row 3: Active Filters & Filtered Summary Banner */}
@@ -453,7 +490,7 @@ export const AdminOrders: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="font-semibold text-[#73685C]">
               Showing <strong className="text-[#1E1A17]">{filtered.length}</strong> of{' '}
-              <span className="text-[#73685C]">{currentTabOrders.length} {activeTab === 'paid' ? 'paid orders' : 'unpaid records'}</span>
+              <span className="text-[#73685C]">{currentTabOrders.length} {activeTab === 'confirmed' ? 'confirmed orders' : 'unpaid checkouts'}</span>
             </span>
 
             {/* Active Date Badge */}
@@ -530,7 +567,7 @@ export const AdminOrders: React.FC = () => {
             {datePreset === 'range' && startDate && endDate && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF3E0] text-[#805E25] font-semibold border border-[#E8DCBE]">
                 <Calendar className="w-3 h-3 text-[#BA9541]" />
-                <span>Range: {startDate} to {endDate}</span>
+                <span>{startDate} to {endDate}</span>
                 <button
                   type="button"
                   onClick={() => handlePresetSelect('all')}
@@ -542,9 +579,26 @@ export const AdminOrders: React.FC = () => {
             )}
 
             {statusFilter !== 'all' && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-[#D9CFBE] text-[#5A4F42] text-[11px] font-medium">
-                Status: {statusFilter}
-                <button type="button" onClick={() => setStatusFilter('all')} className="hover:text-red-700">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#EFE9DF] text-[#5C5042] font-semibold">
+                <span>Fulfillment: {statusFilter.toUpperCase()}</span>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('all')}
+                  className="hover:text-red-700 ml-0.5 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            )}
+
+            {paymentMethodFilter !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF3E0] text-[#805E25] font-semibold border border-[#E8DCBE]">
+                <span>Payment: {paymentMethodFilter === 'COD' ? '💵 COD' : '⚡ Online'}</span>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethodFilter('all')}
+                  className="hover:text-red-700 ml-0.5 cursor-pointer"
+                >
                   <X className="w-3 h-3" />
                 </button>
               </span>
@@ -563,10 +617,10 @@ export const AdminOrders: React.FC = () => {
           </div>
 
           {/* Quick Metrics for Filtered Set */}
-          {activeTab === 'paid' && (
+          {activeTab === 'confirmed' && (
             <div className="flex items-center gap-3 text-xs">
               <div className="flex items-center gap-1.5">
-                <span className="text-[#73685C]">Paid Sales:</span>
+                <span className="text-[#73685C]">Sales Volume:</span>
                 <strong className="text-emerald-700 font-bold">
                   ₹{filteredTotalRevenue.toLocaleString('en-IN')}
                 </strong>
@@ -574,7 +628,7 @@ export const AdminOrders: React.FC = () => {
               <span className="text-[#D9CFBE]">|</span>
               <div className="flex items-center gap-1 text-[#73685C]">
                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>{filtered.length} Paid Orders</span>
+                <span>{filtered.length} Orders</span>
               </div>
             </div>
           )}
@@ -596,12 +650,12 @@ export const AdminOrders: React.FC = () => {
             <div className="space-y-1">
               <h3 className="font-display font-bold text-base text-[#1E1A17]">
                 {selectedDate
-                  ? `No ${activeTab === 'paid' ? 'paid' : ''} orders found for ${formatFriendlyDateKey(selectedDate)}`
+                  ? `No ${activeTab === 'confirmed' ? 'confirmed' : ''} orders found for ${formatFriendlyDateKey(selectedDate)}`
                   : datePreset === 'today'
-                  ? `No ${activeTab === 'paid' ? 'paid' : ''} orders placed today yet`
+                  ? `No ${activeTab === 'confirmed' ? 'confirmed' : ''} orders placed today yet`
                   : datePreset === 'yesterday'
-                  ? `No ${activeTab === 'paid' ? 'paid' : ''} orders found for yesterday`
-                  : `No ${activeTab === 'paid' ? 'paid' : ''} orders found matching your criteria`}
+                  ? `No ${activeTab === 'confirmed' ? 'confirmed' : ''} orders found for yesterday`
+                  : `No ${activeTab === 'confirmed' ? 'confirmed' : ''} orders found matching your criteria`}
               </h3>
               <p className="text-xs text-[#73685C] max-w-md mx-auto">
                 {selectedDate
@@ -615,7 +669,7 @@ export const AdminOrders: React.FC = () => {
                 onClick={resetAllFilters}
                 className="px-4 py-2 rounded-xl bg-[#1E1A17] text-white text-xs font-bold hover:bg-black transition-colors cursor-pointer"
               >
-                View All {activeTab === 'paid' ? 'Paid' : ''} Orders
+                View All {activeTab === 'confirmed' ? 'Confirmed' : ''} Orders
               </button>
               {selectedDate !== todayKey && (
                 <button
@@ -646,15 +700,24 @@ export const AdminOrders: React.FC = () => {
                 const waChatLink = customerPhone
                   ? getAdminToCustomerWhatsAppLink(customerPhone, order.orderNumber, customerName)
                   : '#';
+                const isCod = order.paymentMethod === 'COD';
 
                 return (
                   <div key={order.id} className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="font-mono font-bold text-xs text-[#1E1A17]">{order.orderNumber}</span>
-                        {order.paymentStatus === 'paid' && (
+                        {isCod ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                            💵 COD (+₹{order.codCharge || 40})
+                          </span>
+                        ) : order.paymentStatus === 'paid' ? (
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                            PAID
+                            ⚡ PAID (Razorpay)
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                            ONLINE PENDING
                           </span>
                         )}
                       </div>
@@ -687,9 +750,17 @@ export const AdminOrders: React.FC = () => {
                     </div>
 
                     <div className="flex items-center justify-between gap-2 pt-2 border-t border-[#F5EFE6]">
-                      <div className="flex items-center gap-1.5">
-                        <Badge status={order.orderStatus} type="order" />
-                        <Badge status={order.paymentStatus} type="payment" />
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <InlineOrderStatusSelect
+                          orderId={order.id}
+                          currentStatus={order.orderStatus}
+                          onUpdate={handleUpdateOrderStatus}
+                        />
+                        <InlinePaymentStatusSelect
+                          orderId={order.id}
+                          currentStatus={order.paymentStatus}
+                          onUpdate={handleUpdatePaymentStatus}
+                        />
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -728,7 +799,8 @@ export const AdminOrders: React.FC = () => {
                     <th className="py-3.5 px-4">Customer & Contact</th>
                     <th className="py-3.5 px-4">Product Details</th>
                     <th className="py-3.5 px-4">Amount</th>
-                    <th className="py-3.5 px-4">Payment</th>
+                    <th className="py-3.5 px-4">Payment Method</th>
+                    <th className="py-3.5 px-4">Payment Status</th>
                     <th className="py-3.5 px-4">Fulfillment Status</th>
                     <th className="py-3.5 px-4 text-right">Actions</th>
                   </tr>
@@ -744,6 +816,7 @@ export const AdminOrders: React.FC = () => {
                     const waChatLink = customerPhone
                       ? getAdminToCustomerWhatsAppLink(customerPhone, order.orderNumber, customerName)
                       : '#';
+                    const isCod = order.paymentMethod === 'COD';
 
                     return (
                       <tr key={order.id} className="hover:bg-[#FAF8F5] transition-colors">
@@ -798,14 +871,35 @@ export const AdminOrders: React.FC = () => {
                           ₹{order.total.toLocaleString('en-IN')}
                         </td>
 
+                        {/* Payment Method */}
+                        <td className="py-3 px-4">
+                          {isCod ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200">
+                              💵 COD (+₹{order.codCharge || 40})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              ⚡ ONLINE
+                            </span>
+                          )}
+                        </td>
+
                         {/* Payment Status */}
                         <td className="py-3 px-4">
-                          <Badge status={order.paymentStatus} type="payment" />
+                          <InlinePaymentStatusSelect
+                            orderId={order.id}
+                            currentStatus={order.paymentStatus}
+                            onUpdate={handleUpdatePaymentStatus}
+                          />
                         </td>
 
                         {/* Order Fulfillment Status */}
                         <td className="py-3 px-4">
-                          <Badge status={order.orderStatus} type="order" />
+                          <InlineOrderStatusSelect
+                            orderId={order.id}
+                            currentStatus={order.orderStatus}
+                            onUpdate={handleUpdateOrderStatus}
+                          />
                         </td>
 
                         {/* Actions */}

@@ -40,13 +40,18 @@ export async function getOrderWhatsAppLink(order: Order): Promise<string> {
   const settings = await getStoreSettings();
   const phone = settings.whatsappNumber || import.meta.env.VITE_WHATSAPP_NUMBER || '917507629997';
 
-  const message = `Hi ${settings.brandName || '90s chya athavani Jewellery'}, I have a question regarding my Order #${order.orderNumber}.
+  const isCod = order.paymentMethod === 'COD';
+  const paymentLine = isCod
+    ? `Payment Mode: 💵 Cash on Delivery (COD)\nTotal Payable on Delivery: ₹${order.total.toLocaleString('en-IN')} (includes ₹${order.codCharge || 40} COD fee)`
+    : `Payment Mode: ⚡ Online Prepaid (Razorpay)\nTotal Paid: ₹${order.total.toLocaleString('en-IN')}`;
+
+  const message = `Hi ${settings.brandName || '90s chya athavani Jewellery'}, I have placed Order #${order.orderNumber}.
 
 Product: ${order.productName}
 Quantity: ${order.quantity}
-Total Paid: ₹${order.total.toLocaleString('en-IN')}
+${paymentLine}
 Customer: ${order.customerSnapshot?.name} (${order.customerSnapshot?.mobile})
-City: ${order.addressSnapshot?.city}
+Delivery Address: ${order.addressSnapshot?.city}, ${order.addressSnapshot?.state || ''} (${order.addressSnapshot?.pincode})
 
 Kindly share the shipping & tracking update. Thank you!`;
 

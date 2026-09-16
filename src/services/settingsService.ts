@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   contactNumber: '+91 75076 29997',
   email: import.meta.env.VITE_SUPPORT_EMAIL || 'orders@90schyaathavanijewellery.com',
   defaultShippingCharge: 50,
+  defaultCodCharge: 40,
   freeShippingThreshold: 0,
   deliveryInfo: 'Insured delivery within 3-5 business days across India via BlueDart / Delhivery / XpressBees.',
   defaultWhatsAppMessage: 'Hi 90s chya athavani Jewellery, I would like to order [PRODUCT_NAME] (₹[PRICE]). Product link: [PRODUCT_URL]',
