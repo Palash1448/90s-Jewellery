@@ -4,10 +4,11 @@ import { ArrowLeft, Lock, ShoppingBag, ChevronDown, AlertCircle } from 'lucide-r
 import { useProduct } from '../hooks/useProduct';
 import { CustomerForm, type CustomerFormData } from '../components/checkout/CustomerForm';
 import { AddressForm } from '../components/checkout/AddressForm';
-import { PaymentMethodSelector, type PaymentMethod } from '../components/checkout/PaymentMethodSelector';
+import { PaymentMethodSelector } from '../components/checkout/PaymentMethodSelector';
 import { OrderSummary } from '../components/checkout/OrderSummary';
+import { Footer } from '../components/common/Footer';
 import { SeoMeta } from '../components/common/SeoMeta';
-import { createPendingOrder, createCodOrder, calculateShippingCharge } from '../services/orderService';
+import { createPendingOrder, calculateShippingCharge } from '../services/orderService';
 import {
   createRazorpayOrderViaPHP,
   openRazorpayCheckoutModal,
@@ -42,15 +43,12 @@ export const CheckoutPage: React.FC = () => {
     country: 'India',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('ONLINE');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingText, setSubmittingText] = useState<string>('');
   const [pendingOrder, setPendingOrder] = useState<Order | null>(null);
   const [mobileSummaryOpen, setMobileSummaryOpen] = useState(false);
-
-  const codCharge = 40;
 
   // Validation
   const validate = (): boolean => {
@@ -105,7 +103,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   /**
-   * Main Checkout Trigger Handler: "PROCEED TO PAYMENT" (Prepaid) or "PLACE COD ORDER" (COD)
+   * Main Checkout Trigger Handler: "PROCEED TO PAYMENT" (Prepaid via Razorpay)
    */
   const handleProceedToPayment = async () => {
     setGeneralError(null);
@@ -121,28 +119,6 @@ export const CheckoutPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // --- CASH ON DELIVERY FLOW ---
-      if (paymentMethod === 'COD') {
-        setSubmittingText('Confirming your Cash on Delivery order...');
-
-        const order = await createCodOrder({
-          product,
-          quantity,
-          customer: {
-            name: customerData.name,
-            mobile: customerData.mobile,
-            whatsapp: customerData.isWhatsAppSame ? customerData.mobile : customerData.whatsapp,
-            email: customerData.email,
-          },
-          address: addressData,
-          existingOrderId: pendingOrder?.id,
-        });
-
-        // Redirect directly to Order Success Page
-        navigate(`/order-success/${order.id}`);
-        return;
-      }
-
       // --- ONLINE PAYMENT (PREPAID RAZORPAY) FLOW ---
       // 2. Create or Update Pending Order in Firebase (re-using existing pendingOrder.id if retried)
       setSubmittingText('Securing your order...');
@@ -261,8 +237,7 @@ export const CheckoutPage: React.FC = () => {
   const unitPrice = product.price;
   const subtotal = unitPrice * quantity;
   const shippingFee = calculateShippingCharge(addressData);
-  const codFee = paymentMethod === 'COD' ? codCharge : 0;
-  const totalAmount = subtotal + shippingFee + codFee;
+  const totalAmount = subtotal + shippingFee;
 
   const brandName = import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery';
 
@@ -327,12 +302,6 @@ export const CheckoutPage: React.FC = () => {
               <span>Shipping:</span>
               <span className="font-semibold text-emerald-700">{shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}</span>
             </div>
-            {paymentMethod === 'COD' && (
-              <div className="flex justify-between text-[#805E25]">
-                <span>COD Handling Fee:</span>
-                <span className="font-semibold">+₹{codCharge}</span>
-              </div>
-            )}
             <div className="flex justify-between pt-1 border-t border-[#E8DCBE] font-bold text-[#1E1A17]">
               <span>Total:</span>
               <span>₹{totalAmount.toLocaleString('en-IN')}</span>
@@ -367,21 +336,15 @@ export const CheckoutPage: React.FC = () => {
               errors={errors}
             />
 
-            <PaymentMethodSelector
-              paymentMethod={paymentMethod}
-              onChange={setPaymentMethod}
-              codCharge={codCharge}
-            />
+            <PaymentMethodSelector />
           </div>
 
-          {/* Right Columns: Summary with "PROCEED TO PAYMENT" / "PLACE COD ORDER" Button */}
+          {/* Right Columns: Summary with "PROCEED TO PAYMENT" Button */}
           <div className="lg:col-span-5">
             <OrderSummary
               product={product}
               quantity={quantity}
               shippingFee={shippingFee}
-              paymentMethod={paymentMethod}
-              codCharge={codCharge}
               state={addressData.state}
               isSubmitting={isSubmitting}
               submittingText={submittingText}
@@ -390,6 +353,9 @@ export const CheckoutPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Trust Badges & Policy Footer */}
+      <Footer />
     </div>
   );
 };

@@ -45,9 +45,23 @@ export const AdminCustomers: React.FC = () => {
       (o) =>
         (o.customerId === customer.id ||
           o.customerSnapshot?.mobile?.replace(/[^0-9]/g, '') === customer.mobile.replace(/[^0-9]/g, '')) &&
-        o.paymentStatus === 'paid'
+        (o.paymentStatus === 'paid' || o.paymentMethod === 'COD')
     );
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedCustomer(null);
+      }
+    };
+    if (selectedCustomer) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedCustomer]);
 
   return (
     <div className="space-y-6">

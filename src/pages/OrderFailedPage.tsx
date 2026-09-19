@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { XCircle, RefreshCw, MessageCircle, ArrowLeft, ShieldAlert } from 'lucide-react';
 import { Header } from '../components/common/Header';
+import { Footer } from '../components/common/Footer';
 import { SeoMeta } from '../components/common/SeoMeta';
 import { getOrderById } from '../services/orderService';
 import type { Order } from '../types';
@@ -88,6 +89,8 @@ export const OrderFailedPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

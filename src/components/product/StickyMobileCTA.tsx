@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, MessageCircle, Share2 } from 'lucide-react';
 import type { Product } from '../../types';
-import { buildWhatsAppLink } from '../../services/whatsappService';
+import { getProductWhatsAppLink } from '../../services/whatsappService';
 import { ShareProductModal } from '../common/ShareProductModal';
 
 interface StickyMobileCTAProps {
@@ -12,17 +12,16 @@ interface StickyMobileCTAProps {
 export const StickyMobileCTA: React.FC<StickyMobileCTAProps> = ({ product }) => {
   const navigate = useNavigate();
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [whatsappLink, setWhatsappLink] = useState('#');
   const isAvailable = product.status === 'active' && product.stock > 0;
+
+  useEffect(() => {
+    getProductWhatsAppLink(product).then(setWhatsappLink);
+  }, [product]);
 
   const handleBuyNow = () => {
     navigate(`/checkout/${product.slug}`);
   };
-
-  const brandName = import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery';
-  const whatsappLink = buildWhatsAppLink(
-    import.meta.env.VITE_WHATSAPP_NUMBER || '917507629997',
-    `Hi ${brandName}, I want to purchase ${product.name} (₹${product.price}). Link: ${window.location.href}`
-  );
 
   return (
     <>

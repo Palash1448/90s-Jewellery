@@ -11,6 +11,20 @@ export const Footer: React.FC = () => {
     getStoreSettings().then(setSettings);
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveModal(null);
+      }
+    };
+    if (activeModal) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeModal]);
+
   const brandName = settings?.brandName || import.meta.env.VITE_BRAND_NAME || '90s chya athavani Jewellery';
 
   return (
@@ -112,11 +126,17 @@ export const Footer: React.FC = () => {
 
       {/* Policy Modal */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#FAF8F5] text-[#1E1A17] rounded-xl max-w-lg w-full p-6 shadow-2xl relative border border-[#D4AF37]/30">
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setActiveModal(null)}
+        >
+          <div
+            className="bg-[#FAF8F5] text-[#1E1A17] rounded-2xl max-w-lg w-full p-6 shadow-2xl relative border border-[#D4AF37]/30 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl font-bold w-8 h-8 rounded-full bg-[#EAE4D9] flex items-center justify-center"
+              className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl font-bold w-8 h-8 rounded-full bg-[#EAE4D9] flex items-center justify-center cursor-pointer"
             >
               ✕
             </button>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Compass, ArrowLeft, MessageCircle } from 'lucide-react';
 import { Header } from '../components/common/Header';
+import { Footer } from '../components/common/Footer';
 import { SeoMeta } from '../components/common/SeoMeta';
 
 export const NotFoundPage: React.FC = () => {
@@ -40,6 +41,8 @@ export const NotFoundPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

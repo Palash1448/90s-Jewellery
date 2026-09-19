@@ -3,9 +3,11 @@ import { useParams, Link } from 'react-router-dom';
 import { Sparkles, ShieldAlert, ArrowLeft, MessageCircle } from 'lucide-react';
 import { useProduct } from '../hooks/useProduct';
 import { Header } from '../components/common/Header';
+import { Footer } from '../components/common/Footer';
 import { ProductPageSkeleton } from '../components/common/LoadingSkeleton';
 import { ProductGallery } from '../components/product/ProductGallery';
 import { ProductHero } from '../components/product/ProductHero';
+import { ProductDetails } from '../components/product/ProductDetails';
 import { StickyMobileCTA } from '../components/product/StickyMobileCTA';
 import { SeoMeta } from '../components/common/SeoMeta';
 
@@ -20,6 +22,7 @@ export const ProductPage: React.FC = () => {
         <main className="flex-1">
           <ProductPageSkeleton />
         </main>
+        <Footer />
       </div>
     );
   }
@@ -60,6 +63,7 @@ export const ProductPage: React.FC = () => {
             </div>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -94,6 +98,7 @@ export const ProductPage: React.FC = () => {
             </div>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -121,7 +126,13 @@ export const ProductPage: React.FC = () => {
           <ProductGallery product={product} />
           <ProductHero product={product} />
         </div>
+
+        {/* Product Details, Specs, Care & FAQs */}
+        <ProductDetails product={product} />
       </main>
+
+      {/* Footer with policies and trust badges */}
+      <Footer />
 
       {/* Sticky Mobile Bottom CTA Bar */}
       <StickyMobileCTA product={product} />

@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Header } from '../components/common/Header';
+import { Footer } from '../components/common/Footer';
 import { Badge } from '../components/common/Badge';
 import { SeoMeta } from '../components/common/SeoMeta';
 import { getOrderById } from '../services/orderService';
@@ -78,6 +79,7 @@ export const OrderSuccessPage: React.FC = () => {
             </Link>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -239,10 +241,12 @@ export const OrderSuccessPage: React.FC = () => {
 
           <div className="flex items-center justify-center gap-2 text-xs text-[#73685C] pt-2">
             <Truck className="w-4 h-4 text-[#BA9541]" />
-            <span>Our automated WhatsApp concierge will send shipping updates to {order.customerSnapshot?.whatsapp || order.customerSnapshot?.mobile}.</span>
+            <span>Our automated WhatsApp concierge will send shipping updates to {order.customerSnapshot?.whatsapp || order.customerSnapshot?.mobile || 'your WhatsApp number'}.</span>
           </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

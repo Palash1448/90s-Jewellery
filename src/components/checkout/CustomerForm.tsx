@@ -31,7 +31,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange, erro
     onChange({
       ...data,
       isWhatsAppSame: checked,
-      whatsapp: checked ? data.mobile : data.whatsapp,
+      whatsapp: checked ? data.mobile : (data.whatsapp || ''),
     });
   };
 
