@@ -25,6 +25,7 @@ export const HomePage: React.FC = () => {
 
   const defaultCategories = [
     'All',
+    'Hair Extensions & Care',
     'Hair Accessories',
     'Mangalsutra',
     'Necklace Sets',
@@ -48,6 +49,11 @@ export const HomePage: React.FC = () => {
     let matchesCategory = false;
     if (selectedCategory === 'All') {
       matchesCategory = true;
+    } else if (selectedCategory === 'Hair Extensions & Care' || selectedCategory === 'Hair Extensions') {
+      matchesCategory =
+        p.category === 'Hair Extensions & Care' ||
+        p.category === 'Hair Extensions' ||
+        p.category.toLowerCase().includes('extension');
     } else if (selectedCategory === 'Hair Accessories') {
       matchesCategory =
         p.category === 'Hair Accessories' ||

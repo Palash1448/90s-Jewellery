@@ -18,19 +18,31 @@ import { parseFirebaseDate } from '../utils/dateUtils';
 
 const LOCAL_PRODUCTS_KEY = 'kj_local_products';
 
+const DEPRECATED_DUMMY_IDS = new Set([
+  'prod-mangalsutra-01',
+  'prod-kundan-choker-02',
+  'prod-temple-jhumka-03',
+  'prod-rose-gold-bracelet-04',
+  'prod-polki-necklace-05',
+  'prod-sheeshpatti-06',
+  'prod-judapin-07',
+]);
+
 function getLocalProducts(): Product[] {
   const local = localStorage.getItem(LOCAL_PRODUCTS_KEY);
   if (local) {
     try {
       const parsed: Product[] = JSON.parse(local);
-      const existingIds = new Set(parsed.map((p) => p.id));
+      // Cleanse removed dummy products
+      const cleaned = parsed.filter((p) => !DEPRECATED_DUMMY_IDS.has(p.id));
+      const existingIds = new Set(cleaned.map((p) => p.id));
       const missing = DEMO_PRODUCTS.filter((p) => !existingIds.has(p.id));
-      if (missing.length > 0) {
-        const merged = [...parsed, ...missing];
+      if (missing.length > 0 || cleaned.length !== parsed.length) {
+        const merged = [...cleaned, ...missing];
         localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(merged));
         return merged;
       }
-      return parsed;
+      return cleaned;
     } catch {
       // ignore
     }
@@ -41,7 +53,8 @@ function getLocalProducts(): Product[] {
 }
 
 function saveLocalProducts(products: Product[]): void {
-  localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(products));
+  const cleaned = products.filter((p) => !DEPRECATED_DUMMY_IDS.has(p.id));
+  localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(cleaned));
 }
 
 /**
@@ -101,7 +114,9 @@ export async function getAllProducts(onlyActive = false): Promise<Product[]> {
     try {
       const colRef = collection(db, 'products');
       const snap = await getDocs(colRef);
-      list = snap.docs.map((d) => normalizeProductDates(d.data(), d.id));
+      list = snap.docs
+        .map((d) => normalizeProductDates(d.data(), d.id))
+        .filter((p) => !DEPRECATED_DUMMY_IDS.has(p.id));
       
       if (list.length > 0) {
         // Sort newest first
@@ -330,7 +345,19 @@ export async function seedInitialProducts(): Promise<void> {
     if (!isPlaceholderConfig) {
       const colRef = collection(db, 'products');
       const snap = await getDocs(colRef);
-      if (snap.empty) {
+      // Clean up any deprecated dummy products from Firestore
+      for (const d of snap.docs) {
+        if (DEPRECATED_DUMMY_IDS.has(d.id)) {
+          try {
+            await deleteDoc(doc(db, 'products', d.id));
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      const activeDocs = snap.docs.filter((d) => !DEPRECATED_DUMMY_IDS.has(d.id));
+      if (activeDocs.length === 0) {
         for (const p of DEMO_PRODUCTS) {
           const docRef = doc(db, 'products', p.id);
           await setDoc(docRef, p);

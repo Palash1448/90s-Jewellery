@@ -90,6 +90,7 @@ export const AdminProducts: React.FC = () => {
 
   const defaultCategories = [
     'All',
+    'Hair Extensions & Care',
     'Hair Accessories',
     'Mangalsutra',
     'Necklace Sets',
@@ -112,6 +113,11 @@ export const AdminProducts: React.FC = () => {
     let matchesCategory = false;
     if (categoryFilter === 'All') {
       matchesCategory = true;
+    } else if (categoryFilter === 'Hair Extensions & Care' || categoryFilter === 'Hair Extensions') {
+      matchesCategory =
+        p.category === 'Hair Extensions & Care' ||
+        p.category === 'Hair Extensions' ||
+        p.category.toLowerCase().includes('extension');
     } else if (categoryFilter === 'Hair Accessories') {
       matchesCategory =
         p.category === 'Hair Accessories' ||
